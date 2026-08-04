@@ -1,0 +1,1 @@
+ALTER TABLE credential_account ADD COLUMN IF NOT EXISTS role VARCHAR(255);

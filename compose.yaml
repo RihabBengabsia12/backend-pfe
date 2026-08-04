@@ -1,0 +1,295 @@
+version: '3.8'
+
+services:
+  # --- INFRASTRUCTURE ---
+
+  discovery-server:
+    build:
+      context: ../discovery-server
+      dockerfile: Dockerfile
+    container_name: projectiq-discovery-server
+    restart: always
+    ports:
+      - "8761:8761"
+    environment:
+      - JAVA_OPTS=-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx512m -noverify -Djava.security.egd=file:/dev/./urandom
+      - SPRING_JMX_ENABLED=false
+      - SPRING_CLOUD_LOADBALANCER_RIBBON_ENABLED=false
+    networks:
+      - projectiq-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 900s
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: projectiq-postgres
+    restart: always
+    env_file: [.env]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - projectiq_postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - projectiq-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: projectiq-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - projectiq_rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - projectiq-network
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 30s
+      timeout: 60s
+      retries: 20
+      start_period: 800s  # laisse jusqu'à 2 min avant de commencer à tester
+
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit-pfe
+    restart: always
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - projectiq-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: projectiq-minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - projectiq_minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - projectiq-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # --- MICROSERVICES ---
+
+  auth-service:
+    build: ./auth-service
+    container_name: projectiq-auth-service
+    restart: on-failure
+    env_file: [.env]
+    environment:
+      - JAVA_OPTS=-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx384m -noverify -Djava.security.egd=file:/dev/./urandom
+      - SPRING_MAIN_LAZY_INITIALIZATION=true
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://projectiq-postgres:5432/${AUTH_DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - SPRING_RABBITMQ_HOST=projectiq-rabbitmq
+      - SPRING_MAIL_HOST=mailpit-pfe
+      - SPRING_MAIL_PORT=1025
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      mailpit:
+        condition: service_started
+    networks:
+      - projectiq-network
+
+  admin-service:
+    build: ./admin-service
+    container_name: projectiq-admin-service
+    restart: on-failure
+    env_file: [.env]
+    environment:
+      - JAVA_OPTS=-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx384m -noverify -Djava.security.egd=file:/dev/./urandom
+      - SPRING_MAIN_LAZY_INITIALIZATION=true
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://projectiq-postgres:5432/${ADMIN_DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - SPRING_RABBITMQ_HOST=projectiq-rabbitmq
+      - SPRING_MAIL_HOST=mailpit-pfe
+      - SPRING_MAIL_PORT=1025
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      mailpit:
+        condition: service_started
+    networks:
+      - projectiq-network
+
+  project-service:
+    build: ./project-service
+    container_name: projectiq-project-service
+    restart: on-failure
+    env_file: [.env]
+    environment:
+      - JAVA_OPTS=-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx512m -noverify -Djava.security.egd=file:/dev/./urandom
+      - SPRING_MAIN_LAZY_INITIALIZATION=true
+      - SPRING_APPLICATION_NAME=PROJECT-SERVICE
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://projectiq-postgres:5432/projectiq_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - SPRING_RABBITMQ_HOST=projectiq-rabbitmq
+      - SPRING_MAIL_HOST=mailpit-pfe
+      - SPRING_MAIL_PORT=1025
+      - SERVER_PORT=8083
+      - IA_SERVICE_URL=http://ia-service:8000
+      - MINIO_ENDPOINT=http://minio:9000
+      - FEIGN_CLIENT_CONFIG_DEFAULT_CONNECTTIMEOUT=60000
+      - FEIGN_CLIENT_CONFIG_DEFAULT_READTIMEOUT=3600000
+    ports:
+     - "8083:8083"
+
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      mailpit:
+        condition: service_started
+    volumes:
+      - ./uploads:/app/uploads/projects
+    networks:
+      - projectiq-network
+
+  analyste-service:
+    build: ./analyste-service
+    container_name: projectiq-analyste-service
+    restart: on-failure
+    env_file: [ .env ]
+    environment:
+      - JAVA_OPTS=-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx512m -noverify -Djava.security.egd=file:/dev/./urandom
+      - SPRING_MAIN_LAZY_INITIALIZATION=true
+      - SPRING_APPLICATION_NAME=ANALYSTE-SERVICE
+      - SERVER_PORT=8080
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://projectiq-postgres:5432/${ANALYSTE_DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - SPRING_RABBITMQ_HOST=projectiq-rabbitmq
+      - SPRING_MAIL_HOST=mailpit-pfe
+      - SPRING_MAIL_PORT=1025
+      - IA_SERVICE_URL=http://ia-service:8000
+      - FEIGN_CLIENT_CONFIG_DEFAULT_CONNECTTIMEOUT=60000
+      - FEIGN_CLIENT_CONFIG_DEFAULT_READTIMEOUT=3600000
+    ports:
+      - "8085:8080"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      mailpit:
+        condition: service_started
+    volumes:
+      - ./uploads:/app/uploads/projects
+      - ./uploads/templates:/app/uploads/templates
+    networks:
+      - projectiq-network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: projectiq-api-gateway
+    restart: on-failure
+    environment:
+      - JAVA_OPTS=-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx384m -noverify -Djava.security.egd=file:/dev/./urandom
+      - SPRING_MAIN_LAZY_INITIALIZATION=true
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_CLOUD_GATEWAY_HTTPCLIENT_RESPONSE_TIMEOUT=60s
+      - SPRING_CLOUD_GATEWAY_HTTPCLIENT_CONNECT_TIMEOUT=10000
+      - SPRING_CLOUD_GATEWAY_ROUTES[0]_ID=auth-service-route
+      - SPRING_CLOUD_GATEWAY_ROUTES[0]_URI=lb://AUTH-SERVICE
+      - SPRING_CLOUD_GATEWAY_ROUTES[0]_PREDICATES[0]=Path=/api/auth/**
+      - SPRING_CLOUD_GATEWAY_ROUTES[1]_ID=admin-service-route
+      - SPRING_CLOUD_GATEWAY_ROUTES[1]_URI=lb://ADMIN-SERVICE
+      - SPRING_CLOUD_GATEWAY_ROUTES[1]_PREDICATES[0]=Path=/api/admin/**
+      - SPRING_CLOUD_GATEWAY_ROUTES[1]_FILTERS[0]=StripPrefix=1
+      - SPRING_CLOUD_GATEWAY_ROUTES[2]_ID=project-service-route
+      - SPRING_CLOUD_GATEWAY_ROUTES[2]_URI=lb://PROJECT-SERVICE
+      - SPRING_CLOUD_GATEWAY_ROUTES[2]_PREDICATES[0]=Path=/api/projects/**,/api/dossiers/**,/api/documents/**,/api/validation/**
+      - SPRING_CLOUD_GATEWAY_ROUTES[3]_ID=analyste-service-route
+      - SPRING_CLOUD_GATEWAY_ROUTES[3]_URI=lb://ANALYSTE-SERVICE
+      - SPRING_CLOUD_GATEWAY_ROUTES[3]_PREDICATES[0]=Path=/api/analyst/**
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORSCONFIGURATIONS_[/**]_ALLOWEDMETHODS[0]=GET
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORSCONFIGURATIONS_[/**]_ALLOWEDMETHODS[1]=POST
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORSCONFIGURATIONS_[/**]_ALLOWEDMETHODS[2]=PUT
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORSCONFIGURATIONS_[/**]_ALLOWEDMETHODS[3]=DELETE
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORSCONFIGURATIONS_[/**]_ALLOWEDMETHODS[4]=OPTIONS
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORSCONFIGURATIONS_[/**]_ALLOWEDHEADERS[0]=*
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORSCONFIGURATIONS_[/**]_ALLOWCREDENTIALS=false
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_ADD-TO-SIMPLE-URL-HANDLER-MAPPING=true
+    volumes:
+      - ./api-gateway/src/main/resources/application.yml:/app/config/application.yml
+    ports:
+      - "8089:8089"
+    depends_on: 
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - projectiq-network
+
+  ia-service:
+    build:
+      context: ../../Desktop/frontend-PFE/ia-service
+      dockerfile: Dockerfile
+    container_name: projectiq-ia-service
+    restart: always
+    env_file: [../../Desktop/frontend-PFE/ia-service/.env]
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../../Desktop/frontend-PFE/ia-service:/app
+    networks:
+      - projectiq-network
+
+volumes:
+  projectiq_postgres_data:
+  projectiq_rabbitmq_data:
+  projectiq_minio_data:
+
+networks:
+  projectiq-network:
+    driver: bridge

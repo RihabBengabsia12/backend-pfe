@@ -1,0 +1,100 @@
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:727) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at tn.rihab.projectservice.service.DossierService$$SpringCGLIB$$0.launchAnalysis(<generated>) ~[!/:0.0.1-SNAPSHOT]
+	at tn.rihab.projectservice.controller.DossierController.lambda$launchAnalysis$0(DossierController.java:78) ~[!/:0.0.1-SNAPSHOT]
+	at java.base/java.util.concurrent.CompletableFuture$AsyncRun.run(CompletableFuture.java:1804) ~[na:na]
+	at java.base/java.util.concurrent.CompletableFuture$AsyncRun.exec(CompletableFuture.java:1796) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:387) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1312) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1843) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1808) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:188) ~[na:na]
+Caused by: java.net.ConnectException: Connection refused
+	at java.base/sun.nio.ch.Net.pollConnect(Native Method) ~[na:na]
+	at java.base/sun.nio.ch.Net.pollConnectNow(Net.java:694) ~[na:na]
+	at java.base/sun.nio.ch.NioSocketImpl.timedFinishConnect(NioSocketImpl.java:542) ~[na:na]
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:592) ~[na:na]
+	at java.base/java.net.Socket.connect(Socket.java:751) ~[na:na]
+	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:531) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:636) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.<init>(HttpClient.java:282) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:386) ~[na:na]
+	at java.base/sun.net.www.http.HttpClient.New(HttpClient.java:408) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getNewHttpClient(HttpURLConnection.java:1324) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1257) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1143) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.connect(HttpURLConnection.java:1072) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getOutputStream0(HttpURLConnection.java:1474) ~[na:na]
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.getOutputStream(HttpURLConnection.java:1437) ~[na:na]
+	at feign.Client$Default.convertAndSend(Client.java:224) ~[feign-core-13.5.jar!/:na]
+	at feign.Client$Default.execute(Client.java:109) ~[feign-core-13.5.jar!/:na]
+	at feign.SynchronousMethodHandler.executeAndDecode(SynchronousMethodHandler.java:92) ~[feign-core-13.5.jar!/:na]
+	... 33 common frames omitted
+
+2026-08-02T22:09:48.312Z  WARN 1 --- [PROJECT-SERVICE] [nPool-worker-18] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 23514
+2026-08-02T22:09:48.430Z ERROR 1 --- [PROJECT-SERVICE] [nPool-worker-18] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: new row for relation "dossiers" violates check constraint "dossiers_status_check"
+  Detail: Failing row contains (null, null, null, null, 2026-09-12, null, f, null, 2, f, null, null, null, null, null, 2026-08-02 18:46:46.558436, 2026-08-02 22:09:45.901457, a5bcd67e-f1c8-4f50-be88-14e8fecaf0b3, null, null, null, null, null, null, null, null, null, null, documents-originaux/tdr/964c9938-8241-44fa-b5c3-5fb7dfc3aed9_B- ..., documents-texte/a5bcd67e-f1c8-4f50-be88-14e8fecaf0b3/document_fu..., null, null, null, null, null, ERROR, f, f).
+2026-08-02T22:14:11.226Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T22:17:34.737Z  INFO 1 --- [PROJECT-SERVICE] [nio-8083-exec-4] t.r.p.controller.DossierController       : [Analyse] Lancement manuel pour le dossier ID : a5bcd67e-f1c8-4f50-be88-14e8fecaf0b3
+2026-08-02T22:17:37.818Z  INFO 1 --- [PROJECT-SERVICE] [nPool-worker-20] t.r.p.service.ExtractionService          : [Extraction P1] Dossier a5bcd67e-f1c8-4f50-be88-14e8fecaf0b3 — appel ia-service
+2026-08-02T22:19:06.174Z  INFO 1 --- [PROJECT-SERVICE] [nPool-worker-20] t.r.p.service.DossierService             : [Analyse] Analyse IA terminée pour le dossier : a5bcd67e-f1c8-4f50-be88-14e8fecaf0b3
+2026-08-02T22:19:10.116Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T22:19:15.949Z  INFO 1 --- [PROJECT-SERVICE] [nPool-worker-20] o.s.a.r.c.CachingConnectionFactory       : Attempting to connect to: [projectiq-rabbitmq:5672]
+2026-08-02T22:19:38.615Z ERROR 1 --- [PROJECT-SERVICE] [nPool-worker-20] t.r.p.controller.DossierController       : [Analyse] Erreur pendant l'analyse asynchrone : java.net.SocketException: Connection reset by peer
+
+org.springframework.amqp.AmqpIOException: java.net.SocketException: Connection reset by peer
+	at org.springframework.amqp.rabbit.support.RabbitExceptionTranslator.convertRabbitAccessException(RabbitExceptionTranslator.java:70) ~[spring-rabbit-3.2.3.jar!/:3.2.3]
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.createBareConnection(AbstractConnectionFactory.java:632) ~[spring-rabbit-3.2.3.jar!/:3.2.3]
+	at org.springframework.amqp.rabbit.connection.CachingConnectionFactory.createConnection(CachingConnectionFactory.java:726) ~[spring-rabbit-3.2.3.jar!/:3.2.3]
+	at org.springframework.amqp.rabbit.connection.ConnectionFactoryUtils.createConnection(ConnectionFactoryUtils.java:257) ~[spring-rabbit-3.2.3.jar!/:3.2.3]
+	at org.springframework.amqp.rabbit.core.RabbitTemplate.doExecute(RabbitTemplate.java:2262) ~[spring-rabbit-3.2.3.jar!/:3.2.3]
+	at org.springframework.amqp.rabbit.core.RabbitTemplate.execute(RabbitTemplate.java:2235) ~[spring-rabbit-3.2.3.jar!/:3.2.3]
+	at org.springframework.amqp.rabbit.core.RabbitTemplate.send(RabbitTemplate.java:1135) ~[spring-rabbit-3.2.3.jar!/:3.2.3]
+	at org.springframework.amqp.rabbit.core.RabbitTemplate.convertAndSend(RabbitTemplate.java:1201) ~[spring-rabbit-3.2.3.jar!/:3.2.3]
+	at org.springframework.amqp.rabbit.core.RabbitTemplate.convertAndSend(RabbitTemplate.java:1194) ~[spring-rabbit-3.2.3.jar!/:3.2.3]
+	at tn.rihab.projectservice.messaging.EventPublisher.publishPhase1Extracted(EventPublisher.java:58) ~[!/:0.0.1-SNAPSHOT]
+	at tn.rihab.projectservice.service.DossierService.launchAnalysis(DossierService.java:101) ~[!/:0.0.1-SNAPSHOT]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:380) ~[spring-tx-6.2.3.jar!/:6.2.3]
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:727) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at tn.rihab.projectservice.service.DossierService$$SpringCGLIB$$0.launchAnalysis(<generated>) ~[!/:0.0.1-SNAPSHOT]
+	at tn.rihab.projectservice.controller.DossierController.lambda$launchAnalysis$0(DossierController.java:78) ~[!/:0.0.1-SNAPSHOT]
+	at java.base/java.util.concurrent.CompletableFuture$AsyncRun.run(CompletableFuture.java:1804) ~[na:na]
+	at java.base/java.util.concurrent.CompletableFuture$AsyncRun.exec(CompletableFuture.java:1796) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:387) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1312) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1843) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1808) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:188) ~[na:na]
+Caused by: java.net.SocketException: Connection reset by peer
+	at java.base/sun.nio.ch.SocketDispatcher.write0(Native Method) ~[na:na]
+	at java.base/sun.nio.ch.SocketDispatcher.write(SocketDispatcher.java:62) ~[na:na]
+	at java.base/sun.nio.ch.NioSocketImpl.tryWrite(NioSocketImpl.java:394) ~[na:na]
+	at java.base/sun.nio.ch.NioSocketImpl.implWrite(NioSocketImpl.java:410) ~[na:na]
+	at java.base/sun.nio.ch.NioSocketImpl.write(NioSocketImpl.java:440) ~[na:na]
+	at java.base/sun.nio.ch.NioSocketImpl$2.write(NioSocketImpl.java:819) ~[na:na]
+	at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1195) ~[na:na]
+	at java.base/java.io.BufferedOutputStream.flushBuffer(BufferedOutputStream.java:125) ~[na:na]
+	at java.base/java.io.BufferedOutputStream.implFlush(BufferedOutputStream.java:252) ~[na:na]
+	at java.base/java.io.BufferedOutputStream.flush(BufferedOutputStream.java:240) ~[na:na]
+	at java.base/java.io.DataOutputStream.flush(DataOutputStream.java:131) ~[na:na]
+	at com.rabbitmq.client.impl.SocketFrameHandler.sendHeader(SocketFrameHandler.java:172) ~[amqp-client-5.22.0.jar!/:5.22.0]
+	at com.rabbitmq.client.impl.SocketFrameHandler.sendHeader(SocketFrameHandler.java:184) ~[amqp-client-5.22.0.jar!/:5.22.0]
+	at com.rabbitmq.client.impl.AMQConnection.start(AMQConnection.java:324) ~[amqp-client-5.22.0.jar!/:5.22.0]
+	at com.rabbitmq.client.ConnectionFactory.newConnection(ConnectionFactory.java:1251) ~[amqp-client-5.22.0.jar!/:5.22.0]
+	at com.rabbitmq.client.ConnectionFactory.newConnection(ConnectionFactory.java:1198) ~[amqp-client-5.22.0.jar!/:5.22.0]
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.connectAddresses(AbstractConnectionFactory.java:678) ~[spring-rabbit-3.2.3.jar!/:3.2.3]
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.connect(AbstractConnectionFactory.java:647) ~[spring-rabbit-3.2.3.jar!/:3.2.3]
+	at org.springframework.amqp.rabbit.connection.AbstractConnectionFactory.createBareConnection(AbstractConnectionFactory.java:593) ~[spring-rabbit-3.2.3.jar!/:3.2.3]
+	... 27 common frames omitted
+
+2026-08-02T22:19:39.516Z  WARN 1 --- [PROJECT-SERVICE] [nPool-worker-20] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 23514
+2026-08-02T22:19:39.517Z ERROR 1 --- [PROJECT-SERVICE] [nPool-worker-20] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: new row for relation "dossiers" violates check constraint "dossiers_status_check"
+  Detail: Failing row contains (null, null, null, null, 2026-09-12, null, f, null, 2, f, null, null, null, null, null, 2026-08-02 18:46:46.558436, 2026-08-02 22:19:39.368709, a5bcd67e-f1c8-4f50-be88-14e8fecaf0b3, null, null, null, null, null, null, null, null, null, null, documents-originaux/tdr/964c9938-8241-44fa-b5c3-5fb7dfc3aed9_B- ..., documents-texte/a5bcd67e-f1c8-4f50-be88-14e8fecaf0b3/document_fu..., null, null, null, null, null, ERROR, f, f).

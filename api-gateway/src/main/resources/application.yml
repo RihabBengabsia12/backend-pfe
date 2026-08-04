@@ -1,0 +1,56 @@
+server:
+  port: 8089
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 3000
+        response-timeout: 1200s
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:4200"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+            allowCredentials: false
+      routes:
+        - id: auth-service-route
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/api/auth/**
+
+        - id: admin-service-route
+          uri: lb://ADMIN-SERVICE
+          predicates:
+            - Path=/api/admin/**
+
+        - id: project-service-route
+          uri: lb://PROJECT-SERVICE
+          predicates:
+            - Path=/api/projects/**, /api/dossiers/**, /api/documents/**
+
+        - id: analyste-service-route
+          uri: lb://ANALYSTE-SERVICE
+          predicates:
+            - Path=/api/analyses/**
+
+eureka:
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}

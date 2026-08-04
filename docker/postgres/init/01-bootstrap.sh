@@ -1,0 +1,29 @@
+set -eu
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres <<EOSQL
+DO
+\$do\$
+BEGIN
+   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${AUTH_DB_USER}') THEN
+      CREATE ROLE ${AUTH_DB_USER} LOGIN PASSWORD '${AUTH_DB_PASSWORD}';
+   END IF;
+END
+\$do\$;
+
+DO
+\$do\$
+BEGIN
+   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${ADMIN_DB_USER}') THEN
+      CREATE ROLE ${ADMIN_DB_USER} LOGIN PASSWORD '${ADMIN_DB_PASSWORD}';
+   END IF;
+END
+\$do\$;
+
+SELECT 'CREATE DATABASE ${AUTH_DB_NAME} OWNER ${AUTH_DB_USER}'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${AUTH_DB_NAME}')
+\gexec
+
+SELECT 'CREATE DATABASE ${ADMIN_DB_NAME} OWNER ${ADMIN_DB_USER}'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${ADMIN_DB_NAME}')
+\gexec
+EOSQL

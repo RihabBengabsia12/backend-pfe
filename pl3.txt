@@ -1,0 +1,100 @@
+	at feign.SynchronousMethodHandler.executeAndDecode(SynchronousMethodHandler.java:109) ~[feign-core-13.5.jar!/:na]
+	at feign.SynchronousMethodHandler.invoke(SynchronousMethodHandler.java:53) ~[feign-core-13.5.jar!/:na]
+	at feign.ReflectiveFeign$FeignInvocationHandler.invoke(ReflectiveFeign.java:104) ~[feign-core-13.5.jar!/:na]
+	at jdk.proxy2/jdk.proxy2.$Proxy223.extractPhase1(Unknown Source) ~[na:na]
+	at tn.rihab.projectservice.service.ExtractionService.extractPhase1(ExtractionService.java:43) ~[!/:0.0.1-SNAPSHOT]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:380) ~[spring-tx-6.2.3.jar!/:6.2.3]
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:727) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at tn.rihab.projectservice.service.ExtractionService$$SpringCGLIB$$0.extractPhase1(<generated>) ~[!/:0.0.1-SNAPSHOT]
+	at tn.rihab.projectservice.service.DossierService.launchAnalysis(DossierService.java:89) ~[!/:0.0.1-SNAPSHOT]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:380) ~[spring-tx-6.2.3.jar!/:6.2.3]
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:727) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at tn.rihab.projectservice.service.DossierService$$SpringCGLIB$$0.launchAnalysis(<generated>) ~[!/:0.0.1-SNAPSHOT]
+	at tn.rihab.projectservice.controller.DossierController.lambda$launchAnalysis$0(DossierController.java:78) ~[!/:0.0.1-SNAPSHOT]
+	at java.base/java.util.concurrent.CompletableFuture$AsyncRun.run(CompletableFuture.java:1804) ~[na:na]
+	at java.base/java.util.concurrent.CompletableFuture$AsyncRun.exec(CompletableFuture.java:1796) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:387) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1312) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1843) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1808) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:188) ~[na:na]
+
+2026-08-02T20:19:01.437Z  WARN 1 --- [PROJECT-SERVICE] [nPool-worker-10] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 23514
+2026-08-02T20:19:01.694Z ERROR 1 --- [PROJECT-SERVICE] [nPool-worker-10] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: new row for relation "dossiers" violates check constraint "dossiers_status_check"
+  Detail: Failing row contains (null, null, null, null, 2026-09-12, null, f, null, 2, f, null, null, null, null, null, 2026-08-02 18:46:46.558436, 2026-08-02 20:19:00.719039, a5bcd67e-f1c8-4f50-be88-14e8fecaf0b3, null, null, null, null, null, null, null, null, null, null, documents-originaux/tdr/964c9938-8241-44fa-b5c3-5fb7dfc3aed9_B- ..., documents-texte/a5bcd67e-f1c8-4f50-be88-14e8fecaf0b3/document_fu..., null, null, null, null, null, ERROR, f, f).
+2026-08-02T20:19:23.094Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T20:24:21.685Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T20:29:19.869Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T20:34:18.836Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T20:39:19.234Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T20:44:18.792Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T20:49:18.455Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T20:54:18.220Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T20:59:17.920Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T21:04:17.482Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T21:09:17.352Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T21:14:17.213Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T21:19:16.964Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T21:23:09.709Z  INFO 1 --- [PROJECT-SERVICE] [nio-8083-exec-3] t.r.p.controller.DossierController       : [Analyse] Lancement manuel pour le dossier ID : a5bcd67e-f1c8-4f50-be88-14e8fecaf0b3
+2026-08-02T21:23:20.866Z  INFO 1 --- [PROJECT-SERVICE] [nPool-worker-12] t.r.p.service.ExtractionService          : [Extraction P1] Dossier a5bcd67e-f1c8-4f50-be88-14e8fecaf0b3 — appel ia-service
+2026-08-02T21:23:24.383Z ERROR 1 --- [PROJECT-SERVICE] [nPool-worker-12] t.r.p.controller.DossierController       : [Analyse] Erreur pendant l'analyse asynchrone : Erreur ia-service [422] sur IaServiceClient#extractPhase1(ExtractionRequestDto)
+
+java.lang.RuntimeException: Erreur ia-service [422] sur IaServiceClient#extractPhase1(ExtractionRequestDto)
+	at tn.rihab.projectservice.config.FeignConfig.lambda$feignErrorDecoder$0(FeignConfig.java:41) ~[!/:0.0.1-SNAPSHOT]
+	at feign.InvocationContext.decodeError(InvocationContext.java:133) ~[feign-core-13.5.jar!/:na]
+	at feign.InvocationContext.proceed(InvocationContext.java:80) ~[feign-core-13.5.jar!/:na]
+	at feign.ResponseHandler.handleResponse(ResponseHandler.java:69) ~[feign-core-13.5.jar!/:na]
+	at feign.SynchronousMethodHandler.executeAndDecode(SynchronousMethodHandler.java:109) ~[feign-core-13.5.jar!/:na]
+	at feign.SynchronousMethodHandler.invoke(SynchronousMethodHandler.java:53) ~[feign-core-13.5.jar!/:na]
+	at feign.ReflectiveFeign$FeignInvocationHandler.invoke(ReflectiveFeign.java:104) ~[feign-core-13.5.jar!/:na]
+	at jdk.proxy2/jdk.proxy2.$Proxy223.extractPhase1(Unknown Source) ~[na:na]
+	at tn.rihab.projectservice.service.ExtractionService.extractPhase1(ExtractionService.java:43) ~[!/:0.0.1-SNAPSHOT]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:380) ~[spring-tx-6.2.3.jar!/:6.2.3]
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:727) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at tn.rihab.projectservice.service.ExtractionService$$SpringCGLIB$$0.extractPhase1(<generated>) ~[!/:0.0.1-SNAPSHOT]
+	at tn.rihab.projectservice.service.DossierService.launchAnalysis(DossierService.java:89) ~[!/:0.0.1-SNAPSHOT]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:380) ~[spring-tx-6.2.3.jar!/:6.2.3]
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:727) ~[spring-aop-6.2.3.jar!/:6.2.3]
+	at tn.rihab.projectservice.service.DossierService$$SpringCGLIB$$0.launchAnalysis(<generated>) ~[!/:0.0.1-SNAPSHOT]
+	at tn.rihab.projectservice.controller.DossierController.lambda$launchAnalysis$0(DossierController.java:78) ~[!/:0.0.1-SNAPSHOT]
+	at java.base/java.util.concurrent.CompletableFuture$AsyncRun.run(CompletableFuture.java:1804) ~[na:na]
+	at java.base/java.util.concurrent.CompletableFuture$AsyncRun.exec(CompletableFuture.java:1796) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:387) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1312) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1843) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1808) ~[na:na]
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:188) ~[na:na]
+
+2026-08-02T21:23:30.025Z  WARN 1 --- [PROJECT-SERVICE] [nPool-worker-12] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 23514
+2026-08-02T21:23:30.029Z ERROR 1 --- [PROJECT-SERVICE] [nPool-worker-12] o.h.engine.jdbc.spi.SqlExceptionHelper   : ERROR: new row for relation "dossiers" violates check constraint "dossiers_status_check"
+  Detail: Failing row contains (null, null, null, null, 2026-09-12, null, f, null, 2, f, null, null, null, null, null, 2026-08-02 18:46:46.558436, 2026-08-02 21:23:28.098139, a5bcd67e-f1c8-4f50-be88-14e8fecaf0b3, null, null, null, null, null, null, null, null, null, null, documents-originaux/tdr/964c9938-8241-44fa-b5c3-5fb7dfc3aed9_B- ..., documents-texte/a5bcd67e-f1c8-4f50-be88-14e8fecaf0b3/document_fu..., null, null, null, null, null, ERROR, f, f).
+2026-08-02T21:24:16.768Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
+2026-08-02T21:29:16.169Z  INFO 1 --- [PROJECT-SERVICE] [rap-executor-%d] c.n.d.s.r.aws.ConfigClusterResolver      : Resolving eureka endpoints via configuration
