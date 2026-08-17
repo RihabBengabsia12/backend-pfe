@@ -1,1 +1,0 @@
-ALTER TABLE data_event ADD COLUMN ressource VARCHAR(255);

@@ -1,1 +1,0 @@
-ALTER TABLE data_event ADD COLUMN actor_email VARCHAR(255);

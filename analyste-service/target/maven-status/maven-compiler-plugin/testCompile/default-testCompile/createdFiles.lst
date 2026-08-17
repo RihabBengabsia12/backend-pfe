@@ -1,8 +1,0 @@
-tn\rihab\analysteservice\controller\ScoringControllerTest.class
-tn\rihab\analysteservice\service\AnalyseDeepServiceTest.class
-tn\rihab\analysteservice\matching\MatchingEngineTest.class
-tn\rihab\analysteservice\AnalysteServiceApplicationTests.class
-tn\rihab\analysteservice\client\IaResilienceTest.class
-tn\rihab\analysteservice\service\ApoAssemblyServiceTest.class
-tn\rihab\analysteservice\service\AuditGenerationServiceTest.class
-tn\rihab\analysteservice\scoring\ScoringEngineTest.class
