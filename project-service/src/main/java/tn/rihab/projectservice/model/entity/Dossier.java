@@ -135,6 +135,13 @@ public class Dossier {
     @Column(name = "document_text_path", length = 500)
     private String documentTextPath;
 
+    /**
+     * Copie de travail anonymisée d'un dossier privé. Elle est utilisée par les
+     * phases IA et ne remplace jamais le texte extrait original.
+     */
+    @Column(name = "anonymized_text_path", length = 500)
+    private String anonymizedTextPath;
+
     @Column(name = "apo_docx_path", length = 500) private String apoDocxPath;
     @Column(name = "methodo_docx_path", length = 500) private String methodoDocxPath;
     @Column(name = "rapport_path", length = 500) private String rapportPath;

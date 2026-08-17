@@ -32,7 +32,7 @@ public class AnonymizationController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AnonymizationDict> toggleActive(@PathVariable Long id, @RequestBody AnonymizationDict dict) {
+    public ResponseEntity<AnonymizationDict> toggleActive(@PathVariable java.util.UUID id, @RequestBody AnonymizationDict dict) {
         log.info("[Admin] Modification de l'état (actif/inactif) du mot ID : {}", id);
         AnonymizationDict updated = dlpService.toggleActive(id, dict.getIsActive());
         systemAudit.logSystemAction("DLP_TOGGLE_WORD", "Mot '" + updated.getOriginalWord() + "' passé à : " + (updated.getIsActive() ? "ACTIF" : "INACTIF"));
@@ -40,7 +40,7 @@ public class AnonymizationController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteWord(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteWord(@PathVariable java.util.UUID id) {
         log.info("[Admin] Suppression d'un mot du dictionnaire DLP (ID : {})", id);
         dlpService.deleteWord(id);
         systemAudit.logSystemAction("DLP_DELETE_WORD", "Suppression du mot DLP ID : " + id);
@@ -62,3 +62,5 @@ public class AnonymizationController {
         return ResponseEntity.ok(decapsulated);
     }
 }
+
+

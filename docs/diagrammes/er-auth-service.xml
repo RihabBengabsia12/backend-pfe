@@ -1,0 +1,22 @@
+<mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="title" value="Modèle entité-relation — Base du auth-service" style="text;html=1;align=center;verticalAlign=middle;fontStyle=1;fontSize=18;" vertex="1" parent="1"><mxGeometry x="300" y="20" width="600" height="35" as="geometry"/></mxCell>
+    <mxCell id="credential" value="credential_account" style="swimlane;html=1;rounded=0;horizontal=1;startSize=30;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=13;childLayout=stackLayout;horizontalStack=0;" vertex="1" parent="1">
+      <mxGeometry x="90" y="150" width="350" height="330" as="geometry" />
+    </mxCell>
+    <mxCell id="credentialFields" value="PK user_id : UUID&#xa;UQ email : String&#xa;role : String&#xa;password_hash : String&#xa;account_status : String&#xa;failed_login_count : Integer&#xa;last_login_at : OffsetDateTime&#xa;password_updated_at : OffsetDateTime&#xa;reset_token : String&#xa;reset_token_expires_at : OffsetDateTime&#xa;created_at : OffsetDateTime&#xa;updated_at : OffsetDateTime" style="text;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" vertex="1" parent="credential"><mxGeometry x="0" y="30" width="350" height="300" as="geometry" /></mxCell>
+    <mxCell id="refresh" value="refresh_token" style="swimlane;html=1;rounded=0;horizontal=1;startSize=30;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=13;childLayout=stackLayout;horizontalStack=0;" vertex="1" parent="1">
+      <mxGeometry x="650" y="120" width="350" height="260" as="geometry" />
+    </mxCell>
+    <mxCell id="refreshFields" value="PK id : UUID&#xa;FK user_id : UUID&#xa;token_hash : String&#xa;session_id : UUID&#xa;expires_at : OffsetDateTime&#xa;revoked_at : OffsetDateTime&#xa;ip_address : String&#xa;user_agent : String&#xa;created_at : OffsetDateTime" style="text;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" vertex="1" parent="refresh"><mxGeometry x="0" y="30" width="350" height="230" as="geometry" /></mxCell>
+    <mxCell id="access" value="access_event" style="swimlane;html=1;rounded=0;horizontal=1;startSize=30;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=13;childLayout=stackLayout;horizontalStack=0;" vertex="1" parent="1">
+      <mxGeometry x="650" y="500" width="350" height="250" as="geometry" />
+    </mxCell>
+    <mxCell id="accessFields" value="PK id : UUID&#xa;FK user_id : UUID (nullable)&#xa;email_attempted : String&#xa;event_type : String&#xa;result : String&#xa;ip_address : String&#xa;user_agent : String&#xa;occurred_at : OffsetDateTime" style="text;html=1;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;whiteSpace=wrap;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" vertex="1" parent="access"><mxGeometry x="0" y="30" width="350" height="220" as="geometry" /></mxCell>
+    <mxCell id="rel1" value="user_id — 1 vers 0..*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;endArrow=none;startArrow=none;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="credential" target="refresh"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="500" y="270"/><mxPoint x="600" y="270"/></Array></mxGeometry></mxCell>
+    <mxCell id="rel2" value="user_id — 1 vers 0..* (journal)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;endArrow=none;startArrow=none;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="credential" target="access"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="500" y="610"/><mxPoint x="600" y="610"/></Array></mxGeometry></mxCell>
+    <mxCell id="note" value="Les liens sont logiques : les entités RefreshToken et AccessEvent stockent user_id, mais aucune association JPA n'est déclarée dans le code." style="shape=note;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontSize=11;" vertex="1" parent="1"><mxGeometry x="100" y="600" width="430" height="100" as="geometry"/></mxCell>
+  </root>
+</mxGraphModel>

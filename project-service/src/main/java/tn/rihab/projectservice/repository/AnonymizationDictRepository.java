@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface AnonymizationDictRepository extends JpaRepository<AnonymizationDict, Long> {
+public interface AnonymizationDictRepository extends JpaRepository<AnonymizationDict, java.util.UUID> {
     
     List<AnonymizationDict> findByIsActiveTrue();
     

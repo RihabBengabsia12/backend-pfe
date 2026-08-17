@@ -64,6 +64,10 @@ public class AnalyseDossier {
     // Notation / Pondérations
     // ════════════════════════════════════════════════════════════
 
+    /** [[MODE_NOTATION]] — "Qualité seule", "Qualité + Prix", "Prix seul", "Meilleure valeur" */
+    @Column(name = "mode_notation", length = 50)
+    private String modeNotation;
+
     /** [[NOTE_MINIMALE]] — seuil éliminatoire technique, ex "70/100" */
     @Column(name = "note_minimale", length = 50)
     private String noteMinimale;
@@ -153,6 +157,15 @@ public class AnalyseDossier {
     /** [[FISCALITE_NON_MAITRISEE]] */
     @Column(name = "fiscalite_non_maitrisee", length = 1000)
     private String fiscaliteNonMaitrisee;
+
+    // ════════════════════════════════════════════════════════════
+    // Métadonnées & Alertes IA
+    // ════════════════════════════════════════════════════════════
+
+    /** Alertes générées par l'IA lors de l'extraction P2 (ex: Document partiel) */
+    @Column(name = "alertes_ia", length = 2000)
+    private String alertesIa;
+
 
     // ════════════════════════════════════════════════════════════
     // Champs internes Egis (saisie manuelle)

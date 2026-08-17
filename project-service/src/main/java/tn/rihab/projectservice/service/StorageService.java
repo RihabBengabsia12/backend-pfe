@@ -4,6 +4,7 @@ import io.minio.*;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import tn.rihab.projectservice.config.MinIOConfig;
@@ -20,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 public class StorageService {
 
     private final MinioClient minioClient;
+    @Qualifier("publicMinioClient")
+    private final MinioClient publicMinioClient;
 
 
     public String uploadFile(String bucket, String objectName, MultipartFile file) {
@@ -114,7 +117,9 @@ public class StorageService {
     public String getPresignedUrl(String fullPath) {
         String[] parts = splitPath(fullPath);
         try {
-            return minioClient.getPresignedObjectUrl(
+            // L'URL est ouverte par le navigateur : elle doit donc utiliser
+            // localhost (ou le domaine public), jamais le nom Docker « minio ».
+            return publicMinioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .bucket(parts[0])
                             .object(parts[1])

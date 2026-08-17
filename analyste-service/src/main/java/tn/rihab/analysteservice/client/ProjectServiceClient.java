@@ -5,6 +5,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import tn.rihab.analysteservice.dto.AuditEntryDto;
 import tn.rihab.analysteservice.dto.DossierDto;
 
@@ -37,8 +38,18 @@ public interface ProjectServiceClient {
     @GetMapping("/api/dossiers/{id}/audit")
     java.util.List<AuditEntryDto> getAuditHistory(@PathVariable("id") UUID dossierId);
 
+    /** Décisions nominatives des managers, nécessaires au rapport d'audit final. */
+    @GetMapping("/api/validation/{id}/status")
+    java.util.List<java.util.Map<String, Object>> getValidationStatus(@PathVariable("id") UUID dossierId);
+
+    @GetMapping("/api/validation/target-manager")
+    java.util.Map<String, Object> getTargetManager(@RequestParam("budget") double budget);
+
     @PostMapping("/api/dossiers/{id}/notify-analyst")
     void notifyAnalyst(@PathVariable("id") UUID dossierId);
+
+    @PostMapping("/api/dossiers/{id}/notify-manager-nogo")
+    void notifyManagerNoGo(@PathVariable("id") UUID dossierId);
 
     @org.springframework.web.bind.annotation.PostMapping("/api/anonymization/unmask")
     java.util.Map<String, String> unmaskMap(@org.springframework.web.bind.annotation.RequestBody java.util.Map<String, String> values);

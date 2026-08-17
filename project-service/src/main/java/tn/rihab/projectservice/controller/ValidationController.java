@@ -3,6 +3,8 @@ package tn.rihab.projectservice.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import tn.rihab.projectservice.model.entity.ValidationToken;
 import tn.rihab.projectservice.service.ValidationService;
@@ -19,6 +21,30 @@ import java.util.UUID;
 public class ValidationController {
 
     private final ValidationService validationService;
+
+    // ── GET /api/validation/{id}/targets ──────────────────────────────────────
+    @GetMapping("/{id}/targets")
+    public ResponseEntity<List<Map<String, Object>>> getValidationTargets(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "GO") String type) {
+        return ResponseEntity.ok(validationService.getValidationTargets(id, type));
+    }
+
+    /** Téléchargement public et temporaire des livrables depuis le lien reçu par e-mail. */
+    @GetMapping("/token/{token}/document/{type}")
+    public ResponseEntity<byte[]> downloadDocumentFromValidationEmail(
+            @PathVariable String token,
+            @PathVariable String type) {
+        log.info("[Validation] Consultation du document {} via lien e-mail", type);
+        var document = validationService.getDocumentForValidationToken(token, type);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        // Un DOCX/ZIP ne peut pas être prévisualisé nativement par la plupart
+                        // des navigateurs : le téléchargement est le comportement fiable.
+                        "attachment; filename=\"" + document.filename() + "\"")
+                .contentType(org.springframework.http.MediaType.parseMediaType(document.contentType()))
+                .body(document.content());
+    }
 
     // ── POST /api/validation/{id}/send ────────────────────────────────────────
 
@@ -64,6 +90,7 @@ public class ValidationController {
                     m.put("status",      t.getStatus());
                     m.put("actionAt",    t.getActionAt() != null ? t.getActionAt().toString() : null);
                     m.put("commentaire", t.getCommentaire() != null ? t.getCommentaire() : "");
+                    m.put("decisionSource", t.getDecisionSource() != null ? t.getDecisionSource() : "PLATFORM");
                     return m;
                 })
                 .toList();
@@ -78,11 +105,20 @@ public class ValidationController {
     public ResponseEntity<Map<String, String>> processTokenAction(
             @PathVariable String token,
             @RequestParam String action,
-            @RequestParam(required = false, defaultValue = "") String commentaire) {
+            @RequestParam(required = false, defaultValue = "") String commentaire,
+            @RequestParam(required = false) String source,
+            Authentication authentication) {
 
         log.info("[Token] Action {} sur token {}", action, token.substring(0, 8) + "...");
 
-        String message = validationService.processAction(token, action, commentaire);
+        String effectiveSource = source;
+        if (effectiveSource == null || effectiveSource.isBlank()) {
+            effectiveSource = authentication != null
+                    && authentication.isAuthenticated()
+                    && !(authentication instanceof AnonymousAuthenticationToken)
+                    ? "PLATFORM" : "EMAIL";
+        }
+        String message = validationService.processAction(token, action, commentaire, effectiveSource);
 
         return ResponseEntity.ok(Map.of(
                 "status",  "SUCCESS",
@@ -111,6 +147,11 @@ public class ValidationController {
     // ── GET /api/validation/pending ───────────────────────────────────────────
 
 
+    @GetMapping("/target-manager")
+    public ResponseEntity<Map<String, Object>> getTargetManager(@RequestParam double budget) {
+        return ResponseEntity.ok(validationService.getTargetManagerForBudget(budget));
+    }
+
     @GetMapping("/pending")
     public ResponseEntity<List<Map<String, Object>>> getPendingValidations(
             @RequestParam String email) {
@@ -119,5 +160,15 @@ public class ValidationController {
 
         List<Map<String, Object>> pending = validationService.getPendingValidationsForManager(email);
         return ResponseEntity.ok(pending);
+    }
+
+    @PostMapping("/{id}/generate-audit")
+    public ResponseEntity<Map<String, String>> generateAudit(
+            @PathVariable UUID id) {
+        validationService.generateAuditForManager(id);
+        return ResponseEntity.accepted().body(Map.of(
+                "status", "AUDIT_GENERATING",
+                "message", "La génération du rapport d'audit de la décision finale a été lancée. Le dossier sera archivé à la réception du rapport."
+        ));
     }
 }

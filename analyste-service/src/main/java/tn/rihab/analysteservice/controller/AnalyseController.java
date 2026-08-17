@@ -8,7 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.http.HttpStatus;
 import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -63,6 +65,55 @@ public class AnalyseController {
         return ResponseEntity.accepted().body(Map.of(
                 "status",  "STARTED",
                 "message", "Phase 2 déclenchée — extraction en cours",
+                "dossierId", id.toString()
+        ));
+    }
+
+    @PostMapping("/batch-deep-analysis")
+    public ResponseEntity<Map<String, String>> triggerBatchDeepAnalysis(@RequestBody List<UUID> ids) {
+        log.info("[AnalyseController] Déclenchement manuel Phase 2 par lot — {} dossiers", ids.size());
+
+        for(UUID id : ids) {
+            var dossier = projectClient.getDossier(id);
+            if (!"INDEXED".equals(dossier.getStatus())
+                    && !"DEEP_ANALYSIS".equals(dossier.getStatus())
+                    && !"CORRECTION_LOOP".equals(dossier.getStatus())) {
+                log.warn("Dossier {} ignoré pour batch Phase 2 (statut invalide: {})", id, dossier.getStatus());
+                continue;
+            }
+            analyseDeepService.runFullPipeline(id);
+        }
+
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(Map.of(
+                "message", "Phase 2 déclenchée par lot avec succès pour " + ids.size() + " dossiers",
+                "status", "DEEP_ANALYSIS"
+        ));
+    }
+
+    // ── POST /api/analyses/{id}/generate-deliverables ─────────────────────────
+
+    /**
+     * Déclenche manuellement la génération des livrables finaux (Phase 4).
+     * Doit être appelé par l'analyste une fois les validations terminées.
+     */
+    @PostMapping("/{id}/generate-deliverables")
+    public ResponseEntity<Map<String, String>> generateDeliverables(@PathVariable UUID id) {
+        log.info("[AnalyseController] Déclenchement manuel de la génération des livrables — dossier {}", id);
+
+        var dossier = projectClient.getDossier(id);
+        if (!"INDEXED".equals(dossier.getStatus())
+                && !"DEEP_ANALYSIS".equals(dossier.getStatus())
+                && !"CORRECTION_LOOP".equals(dossier.getStatus())) {
+            throw new IllegalStateException(
+                    "Génération impossible. Statut actuel : " + dossier.getStatus());
+        }
+
+        // Lancer la génération en asynchrone
+        analyseDeepService.generateDeliverables(id);
+
+        return ResponseEntity.accepted().body(Map.of(
+                "status",  "STARTED",
+                "message", "Génération des livrables en cours",
                 "dossierId", id.toString()
         ));
     }

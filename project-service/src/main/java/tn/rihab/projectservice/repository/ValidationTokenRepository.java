@@ -2,6 +2,8 @@ package tn.rihab.projectservice.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.stereotype.Repository;
 import tn.rihab.projectservice.model.entity.ValidationToken;
 
@@ -15,11 +17,17 @@ public interface ValidationTokenRepository extends JpaRepository<ValidationToken
 
     Optional<ValidationToken> findByToken(String token);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT v FROM ValidationToken v WHERE v.token = :token")
+    Optional<ValidationToken> findByTokenForUpdate(String token);
+
     List<ValidationToken> findByDossierId(UUID dossierId);
 
     List<ValidationToken> findByDossierIdAndStatus(UUID dossierId, String status);
 
     List<ValidationToken> findByValidateurEmailAndStatus(String email, String status);
+
+    List<ValidationToken> findByValidateurEmailIgnoreCase(String email);
 
     /** Nombre de validations approuvées pour un dossier */
     long countByDossierIdAndStatus(UUID dossierId, String status);

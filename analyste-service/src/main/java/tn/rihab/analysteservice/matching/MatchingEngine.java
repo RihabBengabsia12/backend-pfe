@@ -7,7 +7,11 @@ import tn.rihab.analysteservice.dto.ia.*;
 import tn.rihab.analysteservice.matching.matchers.*;
 import tn.rihab.analysteservice.model.MatchingResult;
 import tn.rihab.analysteservice.model.ScoringConfig;
+import tn.rihab.analysteservice.repository.CompetenceRepository;
+import tn.rihab.analysteservice.repository.ReferenceRepository;
+import tn.rihab.analysteservice.repository.ExpertProfilRepository;
 import tn.rihab.analysteservice.repository.MatchingResultRepository;
+import tn.rihab.analysteservice.repository.IaAuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -35,6 +39,11 @@ public class MatchingEngine {
     private final MatchingResultRepository matchingRepo;
     private final ObjectMapper            objectMapper; // 🚀 Injecté automatiquement par Spring
     private final ScoringConfigService scoringConfigService;
+    
+    private final CompetenceRepository competenceRepository;
+    private final ReferenceRepository referenceRepository;
+    private final ExpertProfilRepository expertProfilRepository;
+    private final IaAuditLogRepository auditLogRepo;
 
     /**
      * Lance le matching complet pour un dossier.
@@ -45,12 +54,40 @@ public class MatchingEngine {
         log.info("[Matching] Démarrage Phase 3 pour dossier {}", dossierId);
 
         // ── Étape 1 : Extraction des exigences depuis la DP ───────────────────
+        java.util.Map<String, Object> referentiel = new java.util.HashMap<>();
+        referentiel.put("competences", competenceRepository.findByActifTrue().stream().map(c -> c.getDomaine() + (c.getSousDomaine() != null ? " - " + c.getSousDomaine() : "")).distinct().toList());
+        referentiel.put("references", referenceRepository.findByActifTrue().stream().map(r -> r.getTitre()).toList());
+        referentiel.put("experts", expertProfilRepository.findByActifTrue().stream().map(e -> e.getNom() + " (" + String.join(", ", e.getSpecialites()) + ")").toList());
+
         ExtractionRequestDto reqExigences = ExtractionRequestDto.builder()
                 .dossierId(dossierId)
                 .documentText(documentText)
                 .phase("REQUIREMENTS")
+                .referentiel(referentiel)
                 .build();
         RequirementsResponseDto requirements = iaClient.extractRequirements(reqExigences);
+
+        // Sauvegarder l'audit pour l'extraction des exigences (Phase 3)
+        if (requirements.getToken_usage() != null) {
+            String rawJsonStr = "{}";
+            try {
+                rawJsonStr = objectMapper.writeValueAsString(requirements);
+            } catch (Exception e) {
+                log.warn("Impossible de sérialiser la réponse Phase 3 (Requirements) en JSON", e);
+            }
+            auditLogRepo.save(tn.rihab.analysteservice.model.IaAuditLog.builder()
+                    .dossierId(dossierId)
+                    .actionName("EXTRACTION_PHASE_3")
+                    .tokenUsage(requirements.getToken_usage())
+                    .inputTokens(requirements.getInput_tokens())
+                    .outputTokens(requirements.getOutput_tokens())
+                    .processingTimeMs(requirements.getProcessing_time_ms())
+                    .estimatedCost(requirements.getEstimated_cost())
+                    .cacheCreationTokens(requirements.getCache_creation_tokens())
+                    .cacheReadTokens(requirements.getCache_read_tokens())
+                    .rawJson(rawJsonStr)
+                    .build());
+        }
 
         // ── Étape 2 : Matching compétences ────────────────────────────────────
         var competencesResult = competencesMatcher.match(requirements.getQualifsExigees());
@@ -82,12 +119,34 @@ public class MatchingEngine {
 
         MatrixResponseDto matrice = iaClient.generateMatrix(context);
 
+        // Sauvegarder l'audit pour la matrice
+        if (matrice != null && matrice.getToken_usage() != null) {
+            String rawJsonStr = "{}";
+            try {
+                rawJsonStr = objectMapper.writeValueAsString(matrice);
+            } catch (Exception e) {
+                log.warn("Impossible de sérialiser la réponse Phase 3 (Matrice) en JSON", e);
+            }
+            auditLogRepo.save(tn.rihab.analysteservice.model.IaAuditLog.builder()
+                    .dossierId(dossierId)
+                    .actionName("GENERATION_MATRICE")
+                    .tokenUsage(matrice.getToken_usage())
+                    .inputTokens(matrice.getInput_tokens())
+                    .outputTokens(matrice.getOutput_tokens())
+                    .processingTimeMs(matrice.getProcessing_time_ms())
+                    .estimatedCost(matrice.getEstimated_cost())
+                    .cacheCreationTokens(matrice.getCache_creation_tokens())
+                    .cacheReadTokens(matrice.getCache_read_tokens())
+                    .rawJson(rawJsonStr)
+                    .build());
+        }
+
         // Sérialisation sécurisée via Jackson
         String matriceJson = serializeObject(matrice != null ? matrice.getLignes() : null);
 
         // Alignement stratégique
-        String alignement = competencesResult.taux() >= 0.8 ? "Oui"
-                : competencesResult.taux() >= 0.5 ? "Partiel" : "Non";
+        String alignement = competencesResult.taux() >= 0.8 ? "Oui — aligné"
+                : competencesResult.taux() >= 0.5 ? "Partiel" : "Non aligné";
 
         // ── Étape 7 : Persister MatchingResult ───────────────────────────────
         MatchingResult result = matchingRepo.findByDossierId(dossierId)
@@ -106,6 +165,7 @@ public class MatchingEngine {
         result.setQualifsExigees(serializeObject(requirements.getQualifsExigees()));
         result.setSecteurAo(requirements.getSecteurDetecte());
         result.setAlignementStrategique(alignement);
+        result.setTypeContrat(requirements.getTypeContrat());
 
         // Calcul de la décision de compatibilité
         ScoringConfig config = scoringConfigService.getCurrent();

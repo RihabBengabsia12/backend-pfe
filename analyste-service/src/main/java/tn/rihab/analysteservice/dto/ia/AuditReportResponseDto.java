@@ -11,4 +11,10 @@ public class AuditReportResponseDto {
     private String narratif;
     /** Points d'amélioration identifiés pour les prochaines analyses similaires */
     private String pointsAmelioration;
+    
+    @com.fasterxml.jackson.annotation.JsonProperty("rapport")
+    @com.fasterxml.jackson.annotation.JsonAlias("report")
+    private String rapport;
+
+    private java.util.Map<String, Object> stats;
 }

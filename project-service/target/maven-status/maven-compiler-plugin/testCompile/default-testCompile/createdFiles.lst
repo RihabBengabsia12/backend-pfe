@@ -1,0 +1,9 @@
+tn\rihab\projectservice\controller\InputValidationTest.class
+tn\rihab\projectservice\ProjectServiceApplicationTests.class
+tn\rihab\projectservice\service\DlpServiceTest.class
+tn\rihab\projectservice\service\StorageServiceTest.class
+tn\rihab\projectservice\service\ExtractionServiceTest.class
+tn\rihab\projectservice\config\EurekaRegistrationTest.class
+tn\rihab\projectservice\controller\DossierControllerTest.class
+tn\rihab\projectservice\service\AnonymizationServiceTest.class
+tn\rihab\projectservice\service\DossierServiceTest.class

@@ -1,0 +1,2 @@
+ALTER TABLE data_event
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMP;

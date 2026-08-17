@@ -1,0 +1,85 @@
+<mxfile host="app.diagrams.net" modified="2026-08-15T00:00:00.000Z" agent="Codex" version="24.7.17">
+  <diagram id="deployment-projectiq" name="Déploiement ProjectIQ">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="Diagramme de déploiement Docker Compose — Plateforme ProjectIQ" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="440" y="20" width="720" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="user" value="Utilisateur" style="shape=umlActor;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="35" y="410" width="60" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="frontend" value="&lt;b&gt;Frontend Angular&lt;/b&gt;&lt;br&gt;SPA ProjectIQ&lt;br&gt;Angular 17 · PrimeNG" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=2;align=center;verticalAlign=middle;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="140" y="390" width="190" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="docker" value="&lt;b&gt;Docker Compose&lt;/b&gt;&lt;br&gt;Réseau interne : projectiq-network" style="swimlane;html=1;rounded=0;horizontal=0;startSize=35;strokeWidth=2;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="390" y="90" width="1170" height="720" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="gateway" value="&lt;b&gt;api-gateway&lt;/b&gt;&lt;br&gt;Port hôte : 8089&lt;br&gt;Point d’entrée REST" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=2;align=center;verticalAlign=middle;fontSize=12;" vertex="1" parent="docker">
+          <mxGeometry x="35" y="70" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="eureka" value="&lt;b&gt;discovery-server&lt;/b&gt;&lt;br&gt;Port hôte : 8761&lt;br&gt;Eureka" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=2;align=center;verticalAlign=middle;fontSize=12;" vertex="1" parent="docker">
+          <mxGeometry x="245" y="70" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="auth" value="&lt;b&gt;auth-service&lt;/b&gt;&lt;br&gt;Port interne&lt;br&gt;JWT · comptes" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=2;align=center;verticalAlign=middle;fontSize=12;" vertex="1" parent="docker">
+          <mxGeometry x="455" y="70" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="admin" value="&lt;b&gt;admin-service&lt;/b&gt;&lt;br&gt;Port interne : 9091&lt;br&gt;Administration" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=2;align=center;verticalAlign=middle;fontSize=12;" vertex="1" parent="docker">
+          <mxGeometry x="665" y="70" width="180" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="project" value="&lt;b&gt;project-service&lt;/b&gt;&lt;br&gt;Port hôte : 8083&lt;br&gt;Dossiers · P1 · stockage" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=2;align=center;verticalAlign=middle;fontSize=12;" vertex="1" parent="docker">
+          <mxGeometry x="35" y="225" width="200" height="85" as="geometry"/>
+        </mxCell>
+        <mxCell id="analyste" value="&lt;b&gt;analyste-service&lt;/b&gt;&lt;br&gt;Port hôte : 8085&lt;br&gt;P2 · risques · P-Win · matching" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=2;align=center;verticalAlign=middle;fontSize=12;" vertex="1" parent="docker">
+          <mxGeometry x="270" y="225" width="220" height="85" as="geometry"/>
+        </mxCell>
+        <mxCell id="ia" value="&lt;b&gt;ia-service&lt;/b&gt;&lt;br&gt;Port hôte : 8000&lt;br&gt;FastAPI · Claude" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=2;align=center;verticalAlign=middle;fontSize=12;" vertex="1" parent="docker">
+          <mxGeometry x="525" y="225" width="190" height="85" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="postgres" value="&lt;b&gt;PostgreSQL&lt;/b&gt;&lt;br&gt;Port : 5432&lt;br&gt;credential_account · dossiers · audit" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;strokeWidth=2;align=center;verticalAlign=middle;fontSize=12;" vertex="1" parent="docker">
+          <mxGeometry x="35" y="430" width="220" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="rabbit" value="&lt;b&gt;RabbitMQ&lt;/b&gt;&lt;br&gt;AMQP : 5672&lt;br&gt;Console : 15672" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;strokeWidth=2;align=center;verticalAlign=middle;fontSize=12;" vertex="1" parent="docker">
+          <mxGeometry x="310" y="430" width="200" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="minio" value="&lt;b&gt;MinIO&lt;/b&gt;&lt;br&gt;API : 9000 · Console : 9001&lt;br&gt;documents-originaux · documents-texte · livrables" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;strokeWidth=2;align=center;verticalAlign=middle;fontSize=12;" vertex="1" parent="docker">
+          <mxGeometry x="565" y="430" width="260" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="mailpit" value="&lt;b&gt;Mailpit&lt;/b&gt;&lt;br&gt;SMTP : 1025 · Interface : 8025&lt;br&gt;Messagerie de développement" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;strokeWidth=2;align=center;verticalAlign=middle;fontSize=12;" vertex="1" parent="docker">
+          <mxGeometry x="880" y="430" width="220" height="105" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="edge-user" value="HTTPS / HTTP" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="user" target="frontend"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-front" value="HTTP/REST" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="frontend" target="gateway"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-gw-eu" value="Service Discovery" style="endArrow=block;endFill=1;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="gateway" target="eureka"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-gw-project" value="REST" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="gateway" target="project"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-gw-analyste" value="REST" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="gateway" target="analyste"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-gw-auth" value="REST" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="gateway" target="auth"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-gw-admin" value="REST" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="gateway" target="admin"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-project-db" value="JDBC" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="project" target="postgres"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-auth-db" value="JDBC" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="auth" target="postgres"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-admin-db" value="JDBC" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="admin" target="postgres"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-analyste-db" value="JDBC" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="analyste" target="postgres"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-project-minio" value="S3-compatible" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="project" target="minio"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-analyste-minio" value="S3-compatible" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="analyste" target="minio"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-project-rabbit" value="AMQP" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="project" target="rabbit"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-analyste-rabbit" value="AMQP" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="analyste" target="rabbit"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-auth-rabbit" value="AMQP" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="auth" target="rabbit"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-admin-rabbit" value="AMQP" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="admin" target="rabbit"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-analyste-ia" value="HTTP/REST" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="analyste" target="ia"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="edge-admin-mail" value="SMTP" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="admin" target="mailpit"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="note" value="Les ports indiqués sont ceux exposés par Docker Compose. auth-service et admin-service peuvent rester accessibles via la Gateway et Eureka sans publication directe de port hôte." style="shape=note;whiteSpace=wrap;html=1;strokeWidth=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="430" y="835" width="1080" height="55" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

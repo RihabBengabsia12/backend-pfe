@@ -1,0 +1,199 @@
+﻿<mxGraphModel dx="2060" dy="1124" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="title" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontStyle=1;fontSize=18;" value="Diagramme de séquence de lancement de l&#39;analyse P1 et suivi du statut" vertex="1">
+      <mxGeometry height="30" width="1120" x="220" y="15" as="geometry" />
+    </mxCell>
+    <mxCell id="user" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontStyle=1;strokeWidth=2;" value="Analyste" vertex="1">
+      <mxGeometry height="75" width="55" x="55" y="70" as="geometry" />
+    </mxCell>
+    <mxCell id="front" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="Frontend Angular&#xa;UploadPageComponent" vertex="1">
+      <mxGeometry height="930" width="155" x="250" y="70" as="geometry" />
+    </mxCell>
+    <mxCell id="gateway" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="API Gateway" vertex="1">
+      <mxGeometry height="930" width="120" x="535" y="70" as="geometry" />
+    </mxCell>
+    <mxCell id="controller" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="project-service&#xa;DossierController" vertex="1">
+      <mxGeometry height="930" width="145" x="775" y="70" as="geometry" />
+    </mxCell>
+    <mxCell id="service" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="project-service&#xa;DossierService" vertex="1">
+      <mxGeometry height="930" width="145" x="1045" y="70" as="geometry" />
+    </mxCell>
+    <mxCell id="db" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="PostgreSQL&#xa;dossier" vertex="1">
+      <mxGeometry height="930" width="125" x="1325" y="70" as="geometry" />
+    </mxCell>
+    <mxCell id="loop" parent="1" style="rounded=0;html=1;align=left;verticalAlign=top;spacingTop=5;spacingLeft=7;dashed=1;fillColor=none;fillOpacity=0;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=10;" value="loop [tant que le polling est actif]" vertex="1">
+      <mxGeometry height="340" width="1010" x="170" y="475" as="geometry" />
+    </mxCell>
+    <mxCell id="alt" parent="1" style="rounded=0;html=1;align=left;verticalAlign=top;spacingTop=5;spacingLeft=7;dashed=1;fillColor=none;fillOpacity=0;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=10;" value="alt [statut INDEXED ou CORRECTION_LOOP]" vertex="1">
+      <mxGeometry height="150" width="1010" x="170" y="830" as="geometry" />
+    </mxCell>
+    <mxCell id="line" edge="1" parent="1" style="endArrow=none;startArrow=none;strokeWidth=1;strokeColor=#000000;" value="">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="170" y="900" as="sourcePoint" />
+        <mxPoint x="1180" y="900" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="altError" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontStyle=1;fontSize=10;fillColor=#ffffff;strokeColor=none;" value="alt [statut ERROR]" vertex="1">
+      <mxGeometry height="18" width="160" x="178" y="910" as="geometry" />
+    </mxCell>
+    <mxCell id="m1" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Cliquer sur Analyser">
+      <mxGeometry relative="1" x="-0.041" y="15" as="geometry">
+        <mxPoint x="1" as="offset" />
+        <mxPoint x="83" y="175" as="sourcePoint" />
+        <mxPoint x="327" y="175" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m2" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="analyze() : currentStatus = PARSING_INITIAL">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="425" y="200" />
+          <mxPoint x="425" y="230" />
+        </Array>
+        <mxPoint x="327" y="200" as="sourcePoint" />
+        <mxPoint x="327" y="230" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m3" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="POST /api/dossiers/{id}/analyze">
+      <mxGeometry relative="1" x="0.0672" y="15" as="geometry">
+        <mxPoint x="-1" as="offset" />
+        <mxPoint x="327" y="285" as="sourcePoint" />
+        <mxPoint x="595" y="285" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m4" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="launchAnalysis(id)">
+      <mxGeometry relative="1" x="-0.0873" y="15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="595" y="325" as="sourcePoint" />
+        <mxPoint x="847" y="325" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m5" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="updateStatus(id, PARSING_INITIAL)">
+      <mxGeometry relative="1" x="-0.0148" y="15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="847" y="365" as="sourcePoint" />
+        <mxPoint x="1117" y="365" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m6" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="dossierRepository.save(status = PARSING_INITIAL)">
+      <mxGeometry relative="1" x="0.0593" y="10" as="geometry">
+        <mxPoint x="-1" as="offset" />
+        <mxPoint x="1117" y="400" as="sourcePoint" />
+        <mxPoint x="1387" y="400" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m7" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="CompletableFuture.runAsync(() -&gt; dossierService.launchAnalysis(id))">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="970" y="430" />
+          <mxPoint x="970" y="460" />
+        </Array>
+        <mxPoint x="847" y="430" as="sourcePoint" />
+        <mxPoint x="847" y="460" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m8" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="200 OK : Analyse lancee avec succes">
+      <mxGeometry relative="1" x="0.0079" y="-10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="847" y="500" as="sourcePoint" />
+        <mxPoint x="595" y="500" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m9" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="200 OK">
+      <mxGeometry relative="1" x="0.0075" y="-10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="595" y="530" as="sourcePoint" />
+        <mxPoint x="327" y="530" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m10" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="startPolling(dossierId, isPrivate)">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="425" y="555" />
+          <mxPoint x="425" y="585" />
+        </Array>
+        <mxPoint x="327" y="555" as="sourcePoint" />
+        <mxPoint x="327" y="585" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m11" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="GET /api/dossiers/{id}/status">
+      <mxGeometry relative="1" x="-0.0075" y="15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="327" y="625" as="sourcePoint" />
+        <mxPoint x="595" y="625" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m12" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="getStatus(id)">
+      <mxGeometry relative="1" x="-0.0079" y="15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="595" y="655" as="sourcePoint" />
+        <mxPoint x="847" y="655" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m13" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="findById(id)">
+      <mxGeometry relative="1" x="0.0593" y="20" as="geometry">
+        <mxPoint x="-1" as="offset" />
+        <mxPoint x="847" y="680" as="sourcePoint" />
+        <mxPoint x="1117" y="680" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m14" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="SELECT dossierId, status, pwinScore, joursOuvrables, priorite">
+      <mxGeometry relative="1" x="-0.0148" y="15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="1117" y="705" as="sourcePoint" />
+        <mxPoint x="1387" y="705" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m15" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="Dossier trouve : id, status, score, priorite">
+      <mxGeometry relative="1" x="-0.0593" y="-15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="1387" y="725" as="sourcePoint" />
+        <mxPoint x="1117" y="725" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m16" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Dossier trouve">
+      <mxGeometry relative="1" x="0.0148" y="-15" as="geometry">
+        <mxPoint x="-1" as="offset" />
+        <mxPoint x="1117" y="745" as="sourcePoint" />
+        <mxPoint x="847" y="745" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m17" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="200 OK : status, pwinScore, joursOuvrables, priorite">
+      <mxGeometry relative="1" x="0.0079" y="-15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="847" y="765" as="sourcePoint" />
+        <mxPoint x="595" y="765" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m18" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Statut du dossier">
+      <mxGeometry relative="1" x="0.0821" y="-15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="595" y="785" as="sourcePoint" />
+        <mxPoint x="327" y="785" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m19" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Mettre a jour la progression">
+      <mxGeometry relative="1" x="-0.2049" y="-15" as="geometry">
+        <mxPoint x="-1" as="offset" />
+        <mxPoint x="327" y="805" as="sourcePoint" />
+        <mxPoint x="83" y="805" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m20" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="Arreter le polling et actualiser la liste des dossiers">
+      <mxGeometry relative="1" x="-0.123" y="-10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="327" y="880" as="sourcePoint" />
+        <mxPoint x="83" y="880" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m21" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="Afficher une erreur, arreter le polling et actualiser la liste">
+      <mxGeometry relative="1" x="-0.041" y="-15" as="geometry">
+        <mxPoint x="-1" as="offset" />
+        <mxPoint x="327" y="945" as="sourcePoint" />
+        <mxPoint x="83" y="945" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+  </root>
+</mxGraphModel>
+

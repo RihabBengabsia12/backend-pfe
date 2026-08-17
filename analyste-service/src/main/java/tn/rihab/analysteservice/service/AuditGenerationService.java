@@ -15,7 +15,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -46,6 +49,7 @@ public class AuditGenerationService {
     private final AnalysteEventPublisher  publisher;
     private final PwinScoreRepository     pwinRepo;
     private final AnalyseDossierRepository analyseRepo;
+    private final tn.rihab.analysteservice.repository.IaAuditLogRepository auditLogRepo;
 
     /**
      * Génère le rapport d'audit DOCX et le stocke sur MinIO.
@@ -59,7 +63,9 @@ public class AuditGenerationService {
         // 1. Récupérer toutes les données nécessaires
         DossierDto dossier         = projectClient.getDossier(dossierId);
         List<AuditEntryDto> trail  = projectClient.getAuditHistory(dossierId);
+        List<Map<String, Object>> validations = projectClient.getValidationStatus(dossierId);
         PwinScore pwin             = pwinRepo.findByDossierId(dossierId).orElse(null);
+        FinalDecision finalDecision = resolveFinalDecision(validations);
 
         // 2. Construire le contexte pour Claude
         AuditContextDto context = AuditContextDto.builder()
@@ -79,18 +85,43 @@ public class AuditGenerationService {
         AuditReportResponseDto aiReport = null;
         try {
             aiReport = iaClient.generateAuditReport(context);
+            saveAudit(dossierId, "GENERATION_AUDIT_REPORT", aiReport.getStats());
         } catch (Exception e) {
             log.warn("[Audit] Génération Claude échouée (non bloquant) : {}", e.getMessage());
         }
 
         // 4. Générer le DOCX du rapport d'audit
         String auditDocxPath = generateAuditDocx(
-                dossierId, dossier, trail, pwin, aiReport);
+                dossierId, dossier, trail, pwin, aiReport, finalDecision, validations);
 
         // 5. Publier → project-service stocke le chemin et passe en ARCHIVED
         publisher.publishAuditGenerated(dossierId, auditDocxPath);
 
         log.info("[Audit] Rapport d'audit généré : {}", auditDocxPath);
+    }
+    
+    private void saveAudit(UUID dossierId, String actionName, java.util.Map<String, Object> stats) {
+        if (stats == null) return;
+        try {
+            Integer tokenUsage = stats.get("token_usage") != null ? ((Number)stats.get("token_usage")).intValue() : null;
+            Integer inputTokens = stats.get("input_tokens") != null ? ((Number)stats.get("input_tokens")).intValue() : null;
+            Integer outputTokens = stats.get("output_tokens") != null ? ((Number)stats.get("output_tokens")).intValue() : null;
+            Integer processingTimeMs = stats.get("processing_time_ms") != null ? ((Number)stats.get("processing_time_ms")).intValue() : null;
+            Double estimatedCost = stats.get("estimated_cost") != null ? ((Number)stats.get("estimated_cost")).doubleValue() : null;
+            
+            auditLogRepo.save(tn.rihab.analysteservice.model.IaAuditLog.builder()
+                    .dossierId(dossierId)
+                    .actionName(actionName)
+                    .tokenUsage(tokenUsage)
+                    .inputTokens(inputTokens)
+                    .outputTokens(outputTokens)
+                    .processingTimeMs(processingTimeMs)
+                    .estimatedCost(estimatedCost)
+                    .rawJson("{}")
+                    .build());
+        } catch (Exception e) {
+            log.warn("Erreur de sauvegarde de l'audit pour {}", actionName, e);
+        }
     }
 
     // ── Génération DOCX du rapport d'audit ─────────────────────────────────────
@@ -99,19 +130,48 @@ public class AuditGenerationService {
                                      DossierDto dossier,
                                      List<AuditEntryDto> trail,
                                      PwinScore pwin,
-                                     AuditReportResponseDto aiReport) {
-        try (InputStream tplStream = new ClassPathResource(
-                "templates/Rapport-Audit-Template.docx").getInputStream();
-             XWPFDocument doc = new XWPFDocument(tplStream)) {
+                                     AuditReportResponseDto aiReport,
+                                     FinalDecision finalDecision,
+                                     List<Map<String, Object>> validations) {
+        XWPFDocument doc;
+        boolean templateLoaded = false;
+        try {
+            InputStream tplStream;
+            try {
+                tplStream = new ClassPathResource(
+                        "templates/Template_Rapport_Audit_ProjectIQ.docx").getInputStream();
+            } catch (Exception ignored) {
+                // Copie explicite montée dans l'image Docker pour préserver la vraie trame.
+                tplStream = Files.newInputStream(Path.of("/app/templates/Template_Rapport_Audit_ProjectIQ.docx"));
+            }
+            doc = new XWPFDocument(tplStream);
+            tplStream.close();
+            templateLoaded = true;
+        } catch (Exception templateError) {
+            // Un rapport d'audit ne doit jamais laisser un dossier bloqué en statut AUDIT.
+            // Le document structuré ci-dessous garantit la traçabilité même si le modèle
+            // n'est pas accessible dans une image Docker ancienne ou incomplète.
+            log.warn("[Audit] Modèle DOCX indisponible, génération du rapport structuré de secours : {}",
+                    templateError.getMessage());
+            doc = new XWPFDocument();
+        }
+
+        final XWPFDocument auditDocument = doc;
+        try (auditDocument) {
 
             // Construire la map de remplacement pour le template
-            Map<String, String> valeurs = buildAuditValues(dossier, trail, pwin, aiReport);
+            Map<String, String> valeurs = buildAuditValues(dossier, trail, pwin, aiReport, finalDecision);
 
-            // 1. Injecter les lignes d'audit (Audit Trail)
-            injectTimelineRows(doc, trail);
+            if (templateLoaded) {
+                // 1. Injecter les lignes d'audit (Audit Trail)
+                injectTimelineRows(doc, trail);
+                injectValidationRows(doc, validations);
 
-            // 2. Remplacer les placeholders partout
-            replacePlaceholdersInDoc(doc, valeurs);
+                // 2. Remplacer les placeholders partout
+                replacePlaceholdersInDoc(doc, valeurs);
+            } else {
+                buildFallbackAuditDocument(doc, dossier, trail, pwin, aiReport, finalDecision);
+            }
 
             // Convertir en bytes et uploader
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -131,32 +191,119 @@ public class AuditGenerationService {
         }
     }
 
+    /** Rapport lisible de secours : utilisé uniquement si le fichier modèle est indisponible. */
+    private void buildFallbackAuditDocument(XWPFDocument doc,
+                                            DossierDto dossier,
+                                            List<AuditEntryDto> trail,
+                                            PwinScore pwin,
+                                            AuditReportResponseDto aiReport,
+                                            FinalDecision finalDecision) {
+        org.apache.poi.xwpf.usermodel.XWPFParagraph title = doc.createParagraph();
+        title.setAlignment(org.apache.poi.xwpf.usermodel.ParagraphAlignment.CENTER);
+        org.apache.poi.xwpf.usermodel.XWPFRun titleRun = title.createRun();
+        titleRun.setBold(true);
+        titleRun.setFontSize(16);
+        titleRun.setText("RAPPORT D'AUDIT — PROJECTIQ");
+
+        addFallbackParagraph(doc, "Dossier : " + safe(dossier.getIntituleOffre()), true);
+        addFallbackParagraph(doc, "Client : " + safe(dossier.getClient()));
+        addFallbackParagraph(doc, "Pays : " + safe(dossier.getPays()));
+        addFallbackParagraph(doc, "Date de génération : " + java.time.LocalDate.now());
+
+        addFallbackHeading(doc, "Synthèse de la décision");
+        addFallbackParagraph(doc, "Décision finale : " + finalDecision.label(), true);
+        addFallbackParagraph(doc, finalDecision.details());
+        addFallbackParagraph(doc, buildScoringSection(pwin));
+
+        addFallbackHeading(doc, "Analyse narrative");
+        addFallbackParagraph(doc, aiReport != null ? safe(aiReport.getNarratif()) : "Non disponible.");
+
+        addFallbackHeading(doc, "Points d'amélioration");
+        addFallbackParagraph(doc, aiReport != null ? safe(aiReport.getPointsAmelioration()) : "Non disponible.");
+
+        addFallbackHeading(doc, "Traçabilité des actions");
+        org.apache.poi.xwpf.usermodel.XWPFTable table = doc.createTable();
+        while (table.getRow(0).getTableCells().size() < 4) table.getRow(0).createCell();
+        String[] headers = {"Date", "Acteur", "Action", "Détail"};
+        for (int i = 0; i < headers.length; i++) setCellText(table.getRow(0).getCell(i), headers[i], false);
+        if (trail == null || trail.isEmpty()) {
+            org.apache.poi.xwpf.usermodel.XWPFTableRow row = table.createRow();
+            setCellText(row.getCell(0), "Aucune action enregistrée.", false);
+        } else {
+            for (AuditEntryDto entry : trail) {
+                org.apache.poi.xwpf.usermodel.XWPFTableRow row = table.createRow();
+                setCellText(row.getCell(0), entry.getTimestamp() == null ? "" : entry.getTimestamp().toString(), false);
+                setCellText(row.getCell(1), safe(entry.getActeur()), false);
+                setCellText(row.getCell(2), safe(entry.getAction()), false);
+                setCellText(row.getCell(3), safe(entry.getDetail()), false);
+            }
+        }
+    }
+
+    private void addFallbackHeading(XWPFDocument doc, String text) {
+        org.apache.poi.xwpf.usermodel.XWPFParagraph paragraph = doc.createParagraph();
+        org.apache.poi.xwpf.usermodel.XWPFRun run = paragraph.createRun();
+        run.setBold(true);
+        run.setFontSize(12);
+        run.setText(text);
+    }
+
+    private void addFallbackParagraph(XWPFDocument doc, String text) {
+        addFallbackParagraph(doc, text, false);
+    }
+
+    private void addFallbackParagraph(XWPFDocument doc, String text, boolean bold) {
+        org.apache.poi.xwpf.usermodel.XWPFParagraph paragraph = doc.createParagraph();
+        org.apache.poi.xwpf.usermodel.XWPFRun run = paragraph.createRun();
+        run.setBold(bold);
+        run.setFontSize(10);
+        run.setText(safe(text));
+    }
+
     // ── Construction des valeurs de remplacement ────────────────────────────────
 
     private Map<String, String> buildAuditValues(DossierDto dossier,
                                                  List<AuditEntryDto> trail,
                                                  PwinScore pwin,
-                                                 AuditReportResponseDto aiReport) {
+                                                 AuditReportResponseDto aiReport,
+                                                 FinalDecision finalDecision) {
 
         String scoringSection = buildScoringSection(pwin);
         String correctionsSection = buildCorrectionsSection(trail);
-        String narratif = aiReport != null ? aiReport.getNarratif() : "Non disponible";
-        String ameliorations = aiReport != null ? aiReport.getPointsAmelioration() : "Non disponible";
+        // ia-service historique renvoie son texte sous "rapport". Les nouvelles
+        // versions peuvent renvoyer "narratif" et "pointsAmelioration" : on
+        // accepte les deux formats pour que la template ne reste jamais vide.
+        String narratif = firstNonBlank(
+                aiReport != null ? aiReport.getNarratif() : null,
+                aiReport != null ? aiReport.getRapport() : null,
+                buildAutomaticNarrative(dossier, pwin, finalDecision));
+        String ameliorations = firstNonBlank(
+                aiReport != null ? aiReport.getPointsAmelioration() : null,
+                buildAutomaticRecommendations(pwin, trail));
 
-        return Map.ofEntries(
+        Map<String, String> values = Map.ofEntries(
                 Map.entry("[[INTITULE_OFFRE]]",         safe(dossier.getIntituleOffre())),
                 Map.entry("[[CLIENT]]",                  safe(dossier.getClient())),
                 Map.entry("[[PAYS]]",                    safe(dossier.getPays())),
                 Map.entry("[[BAILLEURS]]",               safe(dossier.getBailleurs())),
                 Map.entry("[[BUDGET_GLOBAL]]",           safe(dossier.getBudgetGlobal())),
                 Map.entry("[[DT_LIM_SOUM]]",             safe(fmt(dossier.getDtLimSoum()))),
-                Map.entry("[[PWIN_SCORE]]",              pwin != null ? String.format("%.1f%%", pwin.getScoreGlobal()) : "N/A"),
-                Map.entry("[[DECISION_FINALE]]",         pwin != null ? pwin.getDecisionAuto() : "N/A"),
+                Map.entry("[[PWIN_SCORE]]",              pwin != null && pwin.getScoreGlobal() != null ? String.format("%.1f%%", pwin.getScoreGlobal()) : "N/A"),
+                Map.entry("[[DECISION_FINALE]]",         finalDecision.label()),
+                Map.entry("[[VALIDATION_DETAILS]]",      finalDecision.details()),
+                Map.entry("[[FINAL_DECISION_SOURCE]]",   finalDecision.source()),
+                Map.entry("[[FINAL_DECISION_AT]]",       finalDecision.dateTime()),
+                Map.entry("[[PACK_DOCUMENTS]]",          packDocuments(dossier)),
+                Map.entry("[[VALIDATION_SENT_AT]]",      findAuditTimestamp(trail, "VALIDATION_SENT")),
+                Map.entry("[[ARCHIVED_AT]]",             findAuditTimestamp(trail, "ARCHIVED")),
+                Map.entry("[[FINAL_STATUS]]",            "ARCHIVED"),
                 Map.entry("[[RISQUE_REDHIBITOIRE]]",     pwin != null && Boolean.TRUE.equals(pwin.getRisqueRedhibitoire())
                         ? "OUI — " + pwin.getRisqueRedhibitoireChamp() : "Non"),
                 Map.entry("[[FORCE_GO]]",                pwin != null && Boolean.TRUE.equals(pwin.getForceGo())
                         ? "OUI — " + safe(pwin.getForceGoJustif()) : "Non"),
-                Map.entry("[[SCORING_DETAIL]]",          scoringSection),
+                Map.entry("[[SCORING_DETAIL]]",          "Recommandation automatique P-Win : "
+                        + (pwin != null ? safe(pwin.getDecisionAuto()) : "N/A") + "\n"
+                        + finalDecision.details() + "\n\n" + scoringSection),
                 Map.entry("[[CORRECTIONS_HUMAINES]]",    correctionsSection),
                 Map.entry("[[NB_CORRECTIONS]]",          String.valueOf(trail.stream()
                         .filter(e -> "FIELD_CORRECTED".equals(e.getAction())).count())),
@@ -164,6 +311,21 @@ public class AuditGenerationService {
                 Map.entry("[[POINTS_AMELIORATION]]",     ameliorations),
                 Map.entry("[[DATE_GENERATION]]",         java.time.LocalDate.now().toString())
         );
+        // Les données intermédiaires restent masquées ; seul le contenu écrit
+        // dans le rapport final est décapsulé.
+        Map<String, String> exportValues = new LinkedHashMap<>();
+        values.forEach((key, value) -> exportValues.put(key, decapsulate(dossier.getId(), value)));
+        return exportValues;
+    }
+
+    private String decapsulate(UUID dossierId, String text) {
+        if (text == null || text.isBlank()) return text;
+        try {
+            return projectClient.decapsulate(dossierId, text);
+        } catch (Exception e) {
+            log.error("[Audit] Erreur de décapsulation DLP pour le dossier {}", dossierId, e);
+            return text;
+        }
     }
 
     // ── Sections textuelles du rapport ─────────────────────────────────────────
@@ -301,6 +463,113 @@ public class AuditGenerationService {
             if (i < lines.length - 1) run.addBreak();
         }
     }
+
+    private FinalDecision resolveFinalDecision(List<Map<String, Object>> validations) {
+        if (validations == null || validations.isEmpty()) {
+            return new FinalDecision("Decision manager non disponible", "Aucune decision de manager n'a ete retrouvee.", "Non disponible", "Non disponible");
+        }
+        List<Map<String, Object>> rejected = validations.stream()
+                .filter(v -> "REJECTED".equals(v.get("status")) || "APPROVE_NOGO".equals(v.get("status")))
+                .toList();
+        List<Map<String, Object>> approved = validations.stream()
+                .filter(v -> "APPROVED".equals(v.get("status"))).toList();
+        boolean allApproved = approved.size() == validations.size();
+        String managers = validations.stream().map(v -> {
+            String name = String.valueOf(v.getOrDefault("nom", ""));
+            String role = String.valueOf(v.getOrDefault("role", ""));
+            String source = String.valueOf(v.getOrDefault("decisionSource", "PLATFORM"));
+            Object date = v.get("actionAt");
+            return (name.isBlank() ? role : name + " (" + role + ")") + " - " + source
+                    + (date != null ? " - " + date : "");
+        }).collect(java.util.stream.Collectors.joining("\n"));
+        String sources = validations.stream().map(v -> String.valueOf(v.getOrDefault("decisionSource", "PLATFORM")))
+                .distinct().collect(java.util.stream.Collectors.joining(", "));
+        String finalAt = validations.stream().map(v -> v.get("actionAt")).filter(java.util.Objects::nonNull)
+                .map(Object::toString).max(String::compareTo).orElse("Non disponible");
+        if (!rejected.isEmpty()) return new FinalDecision("NO-GO confirme", "Decision finale prise par :\n" + managers, sources, finalAt);
+        if (allApproved) return new FinalDecision("GO approuve par tous les decideurs", "Decision finale prise par :\n" + managers, sources, finalAt);
+        return new FinalDecision("Decision en attente", "Etat des validations :\n" + managers, sources, finalAt);
+    }
+
+    /** Remplit le tableau final des validations managers de la template. */
+    private void injectValidationRows(XWPFDocument doc, List<Map<String, Object>> validations) {
+        org.apache.poi.xwpf.usermodel.XWPFTable target = null;
+        int placeholderRow = -1;
+        for (org.apache.poi.xwpf.usermodel.XWPFTable table : doc.getTables()) {
+            for (int i = 0; i < table.getRows().size(); i++) {
+                if (table.getRow(i).getTableCells().stream().anyMatch(c -> c.getText().contains("[[VALIDATION_ROWS]]"))) {
+                    target = table;
+                    placeholderRow = i;
+                    break;
+                }
+            }
+            if (target != null) break;
+        }
+        if (target == null) return;
+        if (validations != null) {
+            for (Map<String, Object> validation : validations) {
+                org.apache.poi.xwpf.usermodel.XWPFTableRow row = target.createRow();
+                while (row.getTableCells().size() < 6) row.createCell();
+                String status = String.valueOf(validation.getOrDefault("status", ""));
+                String decision = "APPROVED".equals(status) ? "GO approuve" :
+                        ("REJECTED".equals(status) || "APPROVE_NOGO".equals(status) ? "NO-GO rejete" : "En attente");
+                setCellText(row.getCell(0), String.valueOf(validation.getOrDefault("nom", "")), false);
+                setCellText(row.getCell(1), String.valueOf(validation.getOrDefault("role", "")), false);
+                setCellText(row.getCell(2), decision, false);
+                setCellText(row.getCell(3), String.valueOf(validation.getOrDefault("decisionSource", "PLATFORM")), false);
+                Object at = validation.get("actionAt");
+                setCellText(row.getCell(4), at == null ? "-" : at.toString().replace("T", " "), false);
+                setCellText(row.getCell(5), String.valueOf(validation.getOrDefault("commentaire", "")), false);
+            }
+        }
+        target.removeRow(placeholderRow);
+    }
+
+    private String packDocuments(DossierDto dossier) {
+        java.util.List<String> documents = new java.util.ArrayList<>();
+        if (dossier.getRapportPath() != null) documents.add("Rapport general");
+        if (dossier.getApoDocxPath() != null) documents.add("Rapport APO");
+        if (dossier.getMethodoDocxPath() != null) documents.add("Methodologie");
+        if (dossier.getPackZipPath() != null) documents.add("Pack ZIP de soumission");
+        return documents.isEmpty() ? "Aucun document de pack enregistre" : String.join(" | ", documents);
+    }
+
+    private String buildAutomaticNarrative(DossierDto dossier, PwinScore pwin, FinalDecision decision) {
+        String score = pwin != null && pwin.getScoreGlobal() != null
+                ? String.format("%.1f%%", pwin.getScoreGlobal()) : "non disponible";
+        return "Le dossier \"" + safe(dossier.getIntituleOffre()) + "\" a suivi le cycle ProjectIQ, "
+                + "depuis l'analyse et le scoring jusqu'a la generation du pack et sa validation. "
+                + "Le P-Win final est de " + score + ". La decision enregistree est : "
+                + decision.label() + ".";
+    }
+
+    private String buildAutomaticRecommendations(PwinScore pwin, List<AuditEntryDto> trail) {
+        java.util.List<String> points = new java.util.ArrayList<>();
+        if (pwin != null && pwin.getScoreGlobal() != null && pwin.getScoreGlobal() < 70) {
+            points.add("Renforcer les axes les moins performants du scoring avant la prochaine consultation comparable.");
+        }
+        long corrections = trail == null ? 0 : trail.stream()
+                .filter(e -> "FIELD_CORRECTED".equals(e.getAction())).count();
+        if (corrections == 0) points.add("Maintenir une revue humaine formelle des champs extraits avant validation finale.");
+        points.add("Conserver la trace des validations et des documents du pack pour les consultations futures.");
+        return String.join("\n", points);
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) return value.trim();
+        }
+        return "Non disponible.";
+    }
+
+    private String findAuditTimestamp(List<AuditEntryDto> trail, String action) {
+        if (trail == null) return "Non disponible";
+        return trail.stream().filter(e -> action.equals(e.getAction())).map(AuditEntryDto::getTimestamp)
+                .filter(java.util.Objects::nonNull).max(java.time.LocalDateTime::compareTo)
+                .map(Object::toString).orElse("Non disponible");
+    }
+
+    private record FinalDecision(String label, String details, String source, String dateTime) {}
 
     private String safe(String v)    { return v != null ? v : ""; }
     private String fmt(Object v)     { return v != null ? v.toString() : ""; }

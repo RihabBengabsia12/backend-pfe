@@ -22,8 +22,8 @@ public interface ExpertProfilRepository extends JpaRepository<ExpertProfil, UUID
     @Query("""
         SELECT e FROM ExpertProfil e
         WHERE e.actif = true
-          AND e.disponibleDu <= :debut
-          AND e.disponibleAu >= :fin
+          AND (e.disponibleDu IS NULL OR e.disponibleDu <= :debut)
+          AND (e.disponibleAu IS NULL OR e.disponibleAu >= :fin)
     """)
     List<ExpertProfil> findDisponibles(LocalDate debut, LocalDate fin);
 }

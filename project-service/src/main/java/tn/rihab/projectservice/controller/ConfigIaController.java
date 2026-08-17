@@ -3,6 +3,7 @@ package tn.rihab.projectservice.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import tn.rihab.projectservice.client.IaServiceClient;
 import tn.rihab.projectservice.dto.PromptUpdateDto;
@@ -19,17 +20,20 @@ public class ConfigIaController {
     private final IaServiceClient iaServiceClient;
     private final tn.rihab.projectservice.service.SystemAuditClientService systemAudit;
 
+    @Value("${projectiq.config-api-key:}")
+    private String configApiKey;
+
     @GetMapping("/prompts")
     public ResponseEntity<Map<String, String>> getAllPrompts() {
         log.info("Récupération de tous les prompts depuis ia-service");
-        return ResponseEntity.ok(iaServiceClient.getAllPrompts());
+        return ResponseEntity.ok(iaServiceClient.getAllPrompts(configApiKey));
     }
 
     @PutMapping("/prompts/{filename}")
     public ResponseEntity<Map<String, String>> updatePrompt(@PathVariable String filename, @RequestBody PromptUpdateDto request) {
         log.info("Mise à jour du prompt global: {}", filename);
         systemAudit.logSystemAction("IA_PROMPT_UPDATE", "Mise à jour du prompt IA global : " + filename);
-        return ResponseEntity.ok(iaServiceClient.updatePrompt(filename, request));
+        return ResponseEntity.ok(iaServiceClient.updatePrompt(filename, request, configApiKey));
     }
 
     private final tn.rihab.projectservice.repository.DossierPromptOverrideRepository overrideRepository;

@@ -30,6 +30,7 @@ public class DashboardController {
     private final MatchingResultRepository   matchingRepo;
     private final AnalyseDossierRepository   analyseRepo;
     private final NoGoReportRepository       noGoReportRepo;
+    private final IaAuditLogRepository       auditRepo;
     private final ProjectServiceClient       projectClient;
 
     @GetMapping("/dashboard-stats")
@@ -121,9 +122,22 @@ public class DashboardController {
         Map<String, Long> topRisks = buildTopRisks(allAnalyses);
         stats.put("topRisks", topRisks);
 
-        // ── 6. KPIs Documents ────────────────────────────────────────────────
+        // ── 6. KPIs Documents & Audit (IA) ───────────────────────────────────
         long noGoReportsCount = noGoReportRepo.count();
         stats.put("noGoReportsCount", noGoReportsCount);
+
+        List<IaAuditLog> allAudits = auditRepo.findAll();
+        long totalProcessingTimeMs = allAudits.stream()
+                .filter(a -> a.getProcessingTimeMs() != null)
+                .mapToLong(IaAuditLog::getProcessingTimeMs)
+                .sum();
+        double totalCost = allAudits.stream()
+                .filter(a -> a.getEstimatedCost() != null)
+                .mapToDouble(IaAuditLog::getEstimatedCost)
+                .sum();
+        
+        stats.put("totalProcessingTimeMs", totalProcessingTimeMs);
+        stats.put("totalApiCost", totalCost);
 
         // ── 7. Distribution P-Win par tranches (pour histogramme) ────────────
         Map<String, Long> pwinBuckets = new LinkedHashMap<>();

@@ -48,6 +48,8 @@ public class ExtractionService {
                     .actionType("Extraction Phase 1")
                     .modelUsed("Claude 3.5 Sonnet")
                     .tokensConsumed(response.getTokenUsage())
+                    .inputTokens(response.getInputTokens())
+                    .outputTokens(response.getOutputTokens())
                     .estimatedCost(response.getEstimatedCost())
                     .responseTimeMs(response.getProcessingTimeMs())
                     .status("SUCCESS")
@@ -87,7 +89,7 @@ public class ExtractionService {
         }
 
         ExtractionRequestDto request = ExtractionRequestDto.builder()
-                .dossierId(dossierId).documentText(documentText).phase("REFIELD_" + fieldName).build();
+                .dossierId(dossierId).documentText(documentText).phase("REFIELD_" + fieldName).fieldName(fieldName).build();
 
         ExtractionResponseDto response = iaServiceClient.reextractField(request);
         ChampResult result = response.getChamps().get(fieldName);
@@ -109,6 +111,7 @@ public class ExtractionService {
             meta.setValeurClaude(val);
             meta.setValeurFinale(val);
             meta.setConfiance(result.getConfiance());
+            meta.setSourceExtrait(result.getSource());
             meta.setReextractionCount(meta.getReextractionCount() + 1);
             metadataRepository.save(meta);
         }
@@ -126,12 +129,21 @@ public class ExtractionService {
                 return;
             }
 
-            metadataRepository.findByDossierIdAndFieldName(dossierId, fieldName).ifPresent(metadataRepository::delete);
             String val = String.valueOf(result.getValeur());
-            metadataRepository.save(ExtractionMetadata.builder()
-                    .dossierId(dossierId).fieldName(fieldName)
-                    .valeurClaude(val).valeurFinale(val)
-                    .confiance(result.getConfiance()).phase(phase).source("claude_extraction").build());
+            ExtractionMetadata meta = metadataRepository.findByDossierIdAndFieldName(dossierId, fieldName)
+                    .orElseGet(() -> ExtractionMetadata.builder()
+                            .dossierId(dossierId)
+                            .fieldName(fieldName)
+                            .build());
+
+            meta.setValeurClaude(val);
+            meta.setValeurFinale(val);
+            meta.setConfiance(result.getConfiance());
+            meta.setPhase(phase);
+            meta.setSource("claude_extraction");
+            meta.setSourceExtrait(result.getSource());
+
+            metadataRepository.save(meta);
         });
     }
 

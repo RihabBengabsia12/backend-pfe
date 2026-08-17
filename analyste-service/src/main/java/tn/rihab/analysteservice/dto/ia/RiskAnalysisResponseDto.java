@@ -20,6 +20,8 @@ public class RiskAnalysisResponseDto {
     
     // Audit metrics
     private Integer token_usage;
+    private Integer input_tokens;
+    private Integer output_tokens;
     private Integer processing_time_ms;
     private Double estimated_cost;
     private Integer cache_creation_tokens;

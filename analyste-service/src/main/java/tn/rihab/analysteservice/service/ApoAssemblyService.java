@@ -35,6 +35,7 @@ public class ApoAssemblyService {
     private final AnalysteEventPublisher   publisher;
     private final ApoDataRepository        apoDataRepo;
     private final tn.rihab.analysteservice.client.ProjectServiceClient projectClient;
+    private final tn.rihab.analysteservice.repository.IaAuditLogRepository auditLogRepo;
 
     /**
      * Point d'entrée principal — appelé depuis AnalyseDeepService après Phase 3.
@@ -55,15 +56,23 @@ public class ApoAssemblyService {
         ApoData apoData = buildApoData(dossierId, dossier, analyse, matching, pwin, texts);
         apoData = apoDataRepo.save(apoData);
 
+        // La base conserve la version anonymisée. La décapsulation ne crée
+        // qu'une copie éphémère, destinée exclusivement aux fichiers finaux.
+        ApoData exportData = decapsulateForExport(dossierId, apoData);
+        DossierDto exportDossier = decapsulateForExport(dossierId, dossier);
+
         // 3. Générer l'APO DOCX (56 placeholders réglementaires)
-        String apoDocxPath = exportService.exportApo(apoData, dossier.getIntituleOffre());
+        String apoDocxPath = exportService.exportApo(exportData, exportDossier.getIntituleOffre());
 
         // 4. Générer la méthodologie DOCX (5 sections)
-        MethodologieResponseDto methodo = generateMethodologieViaClaude(dossier, analyse, matching);
-        String methodoPath = exportService.exportMethodologie(methodo, dossier.getIntituleOffre());
+        MethodologieResponseDto methodo = decapsulateForExport(
+                dossierId,
+                generateMethodologieViaClaude(dossier, analyse, matching)
+        );
+        String methodoPath = exportService.exportMethodologie(methodo, exportData, exportDossier);
 
         // 5. Générer le rapport général résultat DOCX
-        String rapportPath = exportService.exportRapportResultat(apoData, pwin, dossier.getIntituleOffre());
+        String rapportPath = exportService.exportRapportResultat(exportData, pwin, exportDossier.getIntituleOffre());
 
         // 6. Générer la checklist des pièces pointées selon bailleur
         ChecklistResponseDto checklist = checklistService.generate(dossier.getBailleurs(), dossier.getPays());
@@ -147,8 +156,8 @@ public class ApoAssemblyService {
             put(champs, "RELATION_CLIENT",        fmt(matching.getRelationClientNiveau()), "CALCULATED","analyste-referentiel");
             put(champs, "QUALIFS_EXIGEES",        matching.getQualifsExigees(),"CALCULATED","analyste-referentiel");
             put(champs, "ALIGNEMENT_STRATEGIQUE", matching.getAlignementStrategique(), "CALCULATED","analyste-referentiel");
-            put(champs, "ANALYSE_CONCURRENCE",    decapsulate(dossierId, texts.getAnalyseConcurrence()),"CLAUDE","claude-api");
-            put(champs, "JUSTIF_SHORTLIST",       decapsulate(dossierId, texts.getJustifShortlist()),  "CLAUDE","claude-api");
+            put(champs, "ANALYSE_CONCURRENCE",    texts.getAnalyseConcurrence(), "CLAUDE","claude-api");
+            put(champs, "JUSTIF_SHORTLIST",       texts.getJustifShortlist(),   "CLAUDE","claude-api");
         }
 
         // ── Champs calculés automatiquement ───────────────────────────────────
@@ -158,11 +167,11 @@ public class ApoAssemblyService {
                 ? String.format("%.0f €/j", dossier.getTjmImplicite()) : "N/A", "CALCULATED","project-service");
 
         // ── Phase 4 — Textes générés par Claude ───────────────────────────────
-        put(champs, "RESUME_CONTEXTE_OBJECTIFS", decapsulate(dossierId, texts.getResumeContexteObjectifs()), "CLAUDE","claude-api");
-        put(champs, "POINTS_CRITIQUES",          decapsulate(dossierId, texts.getPointsCritiques()),          "CLAUDE","claude-api");
-        put(champs, "RECOMMANDATION_GO_NOGO",    decapsulate(dossierId, texts.getRecommandationGoNogo()),     "CLAUDE","claude-api");
-        put(champs, "ARGUMENTAIRE_GO_NOGO",      decapsulate(dossierId, texts.getArgumentaireGoNogo()),       "CLAUDE","claude-api");
-        put(champs, "LISTE_CLARIFICATIONS",      decapsulate(dossierId, texts.getListeClarifications()),      "CLAUDE","claude-api");
+        put(champs, "RESUME_CONTEXTE_OBJECTIFS", texts.getResumeContexteObjectifs(), "CLAUDE","claude-api");
+        put(champs, "POINTS_CRITIQUES",          texts.getPointsCritiques(),          "CLAUDE","claude-api");
+        put(champs, "RECOMMANDATION_GO_NOGO",    texts.getRecommandationGoNogo(),     "CLAUDE","claude-api");
+        put(champs, "ARGUMENTAIRE_GO_NOGO",      texts.getArgumentaireGoNogo(),       "CLAUDE","claude-api");
+        put(champs, "LISTE_CLARIFICATIONS",      texts.getListeClarifications(),      "CLAUDE","claude-api");
 
         // ── Champs MANUAL (saisie humaine obligatoire) ────────────────────────
         put(champs, "BUDGET_INTERNE",        "",  "MANUAL", "user");
@@ -204,19 +213,103 @@ public class ApoAssemblyService {
 
     // ── Génération des textes Claude ───────────────────────────────────────────
 
-    private ApoTextsResponseDto generateTextsViaClaude(DossierDto dossier,
+    public ApoTextsResponseDto generateTextsViaClaude(DossierDto dossier,
                                                        AnalyseDossier analyse,
                                                        MatchingResult matching,
                                                        PwinScore pwin) {
         ApoGenerationContextDto context = buildGenerationContext(dossier, analyse, matching, pwin);
-        return iaClient.generateApoTexts(context);
+        ApoTextsResponseDto resp = iaClient.generateApoTexts(context);
+        saveAudit(dossier.getId(), "GENERATION_TEXTES_APO", resp.getStats());
+        return resp;
+    }
+
+    private ApoData decapsulateForExport(UUID dossierId, ApoData source) {
+        Map<String, ApoData.ChampApo> resolved = new LinkedHashMap<>();
+        source.getChamps().forEach((key, value) -> resolved.put(key, ApoData.ChampApo.builder()
+                .valeur(decapsulate(dossierId, value.getValeur()))
+                .statut(value.getStatut())
+                .source(value.getSource())
+                .build()));
+        return ApoData.builder()
+                .id(source.getId())
+                .dossierId(source.getDossierId())
+                .champs(resolved)
+                .completeness(source.getCompleteness())
+                .updatedAt(source.getUpdatedAt())
+                .build();
+    }
+
+    private DossierDto decapsulateForExport(UUID dossierId, DossierDto source) {
+        return DossierDto.builder()
+                .id(source.getId()).status(source.getStatus()).isPrivate(source.getIsPrivate())
+                .pays(decapsulate(dossierId, source.getPays()))
+                .intituleOffre(decapsulate(dossierId, source.getIntituleOffre()))
+                .numeroReference(decapsulate(dossierId, source.getNumeroReference()))
+                .client(decapsulate(dossierId, source.getClient()))
+                .bailleurs(decapsulate(dossierId, source.getBailleurs()))
+                .budgetGlobal(decapsulate(dossierId, source.getBudgetGlobal()))
+                .hommesMois(source.getHommesMois()).dtLimSoum(source.getDtLimSoum())
+                .langue(decapsulate(dossierId, source.getLangue()))
+                .visiteObl(source.getVisiteObl()).visiteDate(source.getVisiteDate())
+                .confObl(source.getConfObl()).confDate(source.getConfDate())
+                .arriveBo(source.getArriveBo()).transmission(source.getTransmission())
+                .tjmImplicite(source.getTjmImplicite()).joursOuvrables(source.getJoursOuvrables())
+                .priorite(source.getPriorite()).confianceP1(source.getConfianceP1())
+                .pwinScore(source.getPwinScore()).documentTextPath(source.getDocumentTextPath())
+                .apoDocxPath(source.getApoDocxPath()).methodoDocxPath(source.getMethodoDocxPath())
+                .rapportPath(source.getRapportPath()).nogoReportPath(source.getNogoReportPath())
+                .packZipPath(source.getPackZipPath()).auditReportPath(source.getAuditReportPath())
+                .createdAt(source.getCreatedAt()).updatedAt(source.getUpdatedAt())
+                .build();
+    }
+
+    private MethodologieResponseDto decapsulateForExport(UUID dossierId, MethodologieResponseDto source) {
+        source.setSection1_contexteEnjeux(decapsulate(dossierId, source.getSection1_contexteEnjeux()));
+        source.setSection2_approchMethodologique(decapsulate(dossierId, source.getSection2_approchMethodologique()));
+        source.setSection3_planTravail(decapsulate(dossierId, source.getSection3_planTravail()));
+        source.setSection4_compositionEquipe(decapsulate(dossierId, source.getSection4_compositionEquipe()));
+        source.setSection5_gestionRisques(decapsulate(dossierId, source.getSection5_gestionRisques()));
+        return source;
+    }
+
+    /** Régénère uniquement la méthodologie, sans toucher à l'APO, au rapport ni au ZIP. */
+    public String regenerateMethodologie(DossierDto dossier, AnalyseDossier analyse,
+                                        MatchingResult matching, ApoData apoData) {
+        MethodologieResponseDto methodo = generateMethodologieViaClaude(dossier, analyse, matching);
+        return exportService.exportMethodologie(methodo, apoData, dossier);
     }
 
     private MethodologieResponseDto generateMethodologieViaClaude(DossierDto dossier,
                                                                   AnalyseDossier analyse,
                                                                   MatchingResult matching) {
         ApoGenerationContextDto context = buildGenerationContext(dossier, analyse, matching, null);
-        return iaClient.generateMethodologie(context);
+        MethodologieResponseDto resp = iaClient.generateMethodologie(context);
+        saveAudit(dossier.getId(), "GENERATION_METHODOLOGIE", resp.getStats());
+        return resp;
+    }
+
+    private void saveAudit(UUID dossierId, String actionName, java.util.Map<String, Object> stats) {
+        if (stats == null) return;
+        try {
+            Integer tokenUsage = stats.get("token_usage") != null ? ((Number)stats.get("token_usage")).intValue() : null;
+            Integer inputTokens = stats.get("input_tokens") != null ? ((Number)stats.get("input_tokens")).intValue() : null;
+            Integer outputTokens = stats.get("output_tokens") != null ? ((Number)stats.get("output_tokens")).intValue() : null;
+            Integer processingTimeMs = stats.get("processing_time_ms") != null ? ((Number)stats.get("processing_time_ms")).intValue() : null;
+            Double estimatedCost = stats.get("estimated_cost") != null ? ((Number)stats.get("estimated_cost")).doubleValue() : null;
+            
+            auditLogRepo.save(tn.rihab.analysteservice.model.IaAuditLog.builder()
+                    .dossierId(dossierId)
+                    .actionName(actionName)
+                    .tokenUsage(tokenUsage)
+                    .inputTokens(inputTokens)
+                    .outputTokens(outputTokens)
+                    .processingTimeMs(processingTimeMs)
+                    .estimatedCost(estimatedCost)
+                    .rawJson("{}")
+                    .build());
+        } catch (Exception e) {
+            log.warn("Erreur de sauvegarde de l'audit pour {}", actionName, e);
+        }
     }
 
     private ApoGenerationContextDto buildGenerationContext(DossierDto dossier,
@@ -246,6 +339,7 @@ public class ApoAssemblyService {
                 .relationClientNiveau(matching != null ? matching.getRelationClientNiveau() : null)
                 .delaiGlobalMois(fmt(analyse.getDelaiGlobalMois()))
                 .tjmImplicite(fmt(dossier.getTjmImplicite()))
+                .modeNotation(analyse.getModeNotation())
                 .build();
     }
 

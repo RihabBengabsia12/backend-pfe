@@ -59,8 +59,10 @@ public class FeatureFlagService {
         }
 
         // Log the override
+        // Create a default SYSTEM UUID to avoid null constraint violation
+        java.util.UUID systemUuid = java.util.UUID.fromString("00000000-0000-0000-0000-000000000000");
         auditService.saveAudit(
-                null,
+                systemUuid,
                 "USER_FEATURE_FLAGS",
                 "UPDATE",
                 "Mise à jour des droits spécifiques",

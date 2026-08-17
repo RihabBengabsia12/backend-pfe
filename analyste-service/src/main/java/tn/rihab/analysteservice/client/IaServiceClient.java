@@ -6,7 +6,6 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-
 @FeignClient(
         name = "ia-service",
         url  = "${IA_SERVICE_URL:http://localhost:8000}",
@@ -35,10 +34,12 @@ public interface IaServiceClient {
     @PostMapping("/generate/checklist")
     ChecklistResponseDto generateChecklist(@RequestBody ChecklistRequestDto request);
 
-    // CORRECTION : URL corrigée de /generate/nogo-report → /scoring/nogo-report
     @PostMapping("/scoring/nogo-report")
     NoGoReportResponseDto generateNogoReport(@RequestBody NoGoContextDto context);
 
     @PostMapping("/generate/audit-report")
     AuditReportResponseDto generateAuditReport(@RequestBody AuditContextDto context);
+
+    @PostMapping("/matching/match-experts")
+    java.util.List<ExpertMatchResponseDto> matchExperts(@RequestBody ExpertMatchRequestDto request);
 }

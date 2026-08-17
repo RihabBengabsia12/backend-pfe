@@ -49,6 +49,11 @@ public class ScoringConfigService {
                     "Seuils invalides : seuilNoGo < seuilGoConditionnel < seuilGoFort requis");
         }
 
+        if (updated.getSeuilAlignementPartiel() != null && updated.getSeuilAlignementOui() != null
+                && updated.getSeuilAlignementPartiel() >= updated.getSeuilAlignementOui()) {
+            throw new IllegalArgumentException("Seuil alignement Partiel < seuil alignement Oui requis");
+        }
+
         ScoringConfig current = repo.findCurrent();
         current.setSeuilNoGo(updated.getSeuilNoGo());
         current.setSeuilGoConditionnel(updated.getSeuilGoConditionnel());
@@ -60,6 +65,10 @@ public class ScoringConfigService {
         current.setPoidsE_conformite(updated.getPoidsE_conformite());
         current.setTjmMinEgis(updated.getTjmMinEgis());
         current.setTjmMaxEgis(updated.getTjmMaxEgis());
+        current.setSeuilCompatCompetences(updated.getSeuilCompatCompetences());
+        current.setSeuilCompatExperts(updated.getSeuilCompatExperts());
+        current.setSeuilAlignementOui(updated.getSeuilAlignementOui());
+        current.setSeuilAlignementPartiel(updated.getSeuilAlignementPartiel());
 
         ScoringConfig saved = repo.save(current);
         log.info("[ScoringConfig] Mise à jour — seuilNoGo={}, seuilGo={}, seuilGoFort={}, " +

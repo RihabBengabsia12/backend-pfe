@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 import java.util.UUID;
 
+import tn.rihab.analysteservice.service.SseService;
+
 /**
  * Endpoints Phase 4 — Assemblage et édition de l'APO.
  * Base URL : /api/apo
@@ -38,6 +40,7 @@ public class ApoController {
     private final AnalyseDossierRepository analyseRepo;
     private final MatchingResultRepository matchingRepo;
     private final PwinScoreRepository      pwinRepo;
+    private final SseService               sseService;
 
     // ── POST /api/apo/{id}/assemble ───────────────────────────────────────────
 
@@ -55,25 +58,36 @@ public class ApoController {
     public ResponseEntity<Map<String, Object>> assemble(@PathVariable UUID id) {
         log.info("[ApoController] Assemblage manuel — dossier {}", id);
 
-        DossierDto dossier = projectClient.getDossier(id);
+        try {
+            DossierDto dossier = projectClient.getDossier(id);
 
-        AnalyseDossier analyse = analyseRepo.findByDossierId(id)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Phase 2 non complétée — impossible d'assembler l'APO"));
+            AnalyseDossier analyse = analyseRepo.findByDossierId(id).orElse(null);
+            MatchingResult matching = matchingRepo.findByDossierId(id).orElse(null);
+            PwinScore pwin = pwinRepo.findByDossierId(id).orElse(null);
 
-        MatchingResult matching = matchingRepo.findByDossierId(id).orElse(null);
-
-        PwinScore pwin = pwinRepo.findByDossierId(id)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Aucun score P-Win calculé — impossible d'assembler l'APO"));
-
-        apoAssemblyService.assembleAndGenerate(id, dossier, analyse, matching, pwin);
-
-        return ResponseEntity.accepted().body(Map.of(
-                "status",  "ASSEMBLY_STARTED",
-                "message", "Assemblage de l'APO et génération des documents en cours",
-                "dossierId", id.toString()
-        ));
+            // Exécuter l'assemblage de manière asynchrone pour ne pas bloquer la requête HTTP
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    apoAssemblyService.assembleAndGenerate(id, dossier, analyse, matching, pwin);
+                    // Informer le frontend via SSE que c'est terminé
+                    sseService.sendEvent(id, "APO_GENERATED", "Génération du pack décisionnel terminée");
+                } catch (Exception e) {
+                    log.error("[ApoController] Erreur dans le thread asynchrone d'assemblage", e);
+                    sseService.sendEvent(id, "PIPELINE_ERROR", "Erreur lors de la génération: " + e.getMessage());
+                }
+            });
+            return ResponseEntity.accepted().body(Map.of(
+                    "status",  "ASSEMBLY_STARTED",
+                    "message", "Assemblage de l'APO et génération des documents en cours",
+                    "dossierId", id.toString()
+            ));
+        } catch (Exception e) {
+            log.error("[ApoController] Erreur assemblage manuel", e);
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "ERROR",
+                    "message", e.getMessage() != null ? e.getMessage() : e.toString()
+            ));
+        }
     }
 
     // ── GET /api/apo/{id} ──────────────────────────────────────────────────────

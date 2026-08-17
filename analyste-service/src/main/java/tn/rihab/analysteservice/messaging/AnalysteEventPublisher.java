@@ -38,23 +38,26 @@ public class AnalysteEventPublisher {
 
     // ── Méthodes de publication ────────────────────────────────────────────────
 
-    public void publishScoringCompleted(UUID dossierId,
+    public void publishScoringCompleted(UUID dossierId, String analysteName, String notifyRole,
                                         double pwinScore,
-                                        String decision) {
-        // Récupérer le chemin du rapport No-Go si existant
-        String nogoPath = "";
-        try {
-            nogoPath = noGoReportRepository.findByDossierId(dossierId)
-                    .map(r -> r.getDocxPath() != null ? r.getDocxPath() : "")
-                    .orElse("");
-        } catch (Exception ignored) {}
+                                        String decision,
+                                        String nogoPath) {
+        
+        // Sécurité au cas où on l'appelle sans le chemin
+        if (nogoPath == null || nogoPath.isEmpty()) {
+            try {
+                nogoPath = noGoReportRepository.findByDossierId(dossierId)
+                        .map(r -> r.getDocxPath() != null ? r.getDocxPath() : "")
+                        .orElse("");
+            } catch (Exception ignored) {}
+        }
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("dossierId",      dossierId);
         payload.put("eventType",      "SCORING_COMPLETED");
         payload.put("payload", String.format(
-                "{\"pwinScore\":%.1f,\"decision\":\"%s\",\"nogoReportPath\":\"%s\"}",
-                pwinScore, decision, nogoPath));
+                "{\"pwinScore\":%.1f,\"decision\":\"%s\",\"nogoReportPath\":\"%s\",\"analysteName\":\"%s\",\"notifyRole\":\"%s\"}",
+                pwinScore, decision, nogoPath, analysteName != null ? analysteName : "Système Expert IA", notifyRole != null ? notifyRole : "ROLE_DO"));
         payload.put("timestamp", LocalDateTime.now().toString());
 
         rabbitTemplate.convertAndSend(

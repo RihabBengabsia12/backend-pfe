@@ -25,6 +25,12 @@ public class IaAuditLog {
     @Column(name = "token_usage")
     private Integer tokenUsage;
 
+    @Column(name = "input_tokens")
+    private Integer inputTokens;
+
+    @Column(name = "output_tokens")
+    private Integer outputTokens;
+
     @Column(name = "cache_creation_tokens")
     private Integer cacheCreationTokens;
 
@@ -36,6 +42,9 @@ public class IaAuditLog {
 
     @Column(name = "estimated_cost")
     private Double estimatedCost;
+
+    @Column(name = "raw_json", columnDefinition = "TEXT")
+    private String rawJson;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

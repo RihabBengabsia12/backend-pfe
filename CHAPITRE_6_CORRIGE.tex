@@ -1,0 +1,290 @@
+% Packages requis dans le préambule :
+% \usepackage[T1]{fontenc}
+% \usepackage[utf8]{inputenc}
+% \usepackage[french]{babel}
+% \usepackage{booktabs,tabularx,array,float,graphicx}
+% \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\chapter{Tests et validation}
+\label{chap:tests-validation}
+
+\section{Introduction}
+
+Ce chapitre présente la démarche de validation retenue pour ProjectIQ. Son objectif est de vérifier le bon fonctionnement des composants développés, la cohérence des parcours utilisateurs et la fiabilité des échanges entre les services. Une attention particulière est accordée aux mécanismes sensibles de la plateforme : authentification, stockage des documents, anonymisation DLP, communication asynchrone, génération documentaire et traçabilité des appels IA.
+
+Afin de garantir une présentation rigoureuse, la validation est organisée autour de trois axes. Le premier concerne les tests automatisés réellement présents dans les dépôts. Le deuxième correspond à la recette fonctionnelle manuelle, qui doit être accompagnée de preuves d'exécution. Enfin, le troisième axe regroupe les vérifications techniques réalisées à partir des réponses API, des journaux applicatifs et des composants d'infrastructure.
+
+Les résultats chiffrés relatifs aux performances, aux coûts ou à la précision de l'IA ne sont pas présentés sans une campagne de mesures documentée. Cette position permet d'éviter toute extrapolation et de présenter au jury un bilan fidèle à l'état réel du projet.
+
+\section{Stratégie de validation}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Niveaux de validation de ProjectIQ}
+\label{tab:niveaux-validation}
+\begin{tabularx}{\textwidth}{p{3cm}Y Y}
+\toprule
+\textbf{Niveau} & \textbf{Objectif} & \textbf{Périmètre} \\
+\midrule
+Tests de démarrage & Vérifier le chargement des applications Spring Boot. & Authentification, administration, dossiers, analyse, Gateway et Eureka. \\
+Test E2E & Vérifier un parcours utilisateur depuis le navigateur. & Connexion et accès au dashboard Manager. \\
+Recette fonctionnelle & Vérifier les User Stories par rôle. & Administration, analyste et manager. \\
+Intégration & Vérifier les échanges entre composants. & Gateway, RabbitMQ, MinIO, PostgreSQL, Mailpit et service IA. \\
+Contrôles techniques & Vérifier les garde-fous implémentés. & JWT, BCrypt, DLP, upload, ré-extraction et audit IA. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+La recette doit être exécutée dans l'environnement Docker Compose. Les services doivent être enregistrés dans Eureka et l'application Angular doit accéder aux APIs via la Gateway.
+
+\section{Tests automatisés disponibles}
+
+\subsection{Tests de chargement Spring Boot}
+
+Chaque application Spring Boot possède un test JUnit annoté avec \texttt{@SpringBootTest}. Ce test vérifie que le contexte applicatif peut être chargé. Il détecte notamment les erreurs de configuration, de dépendances ou d'initialisation lors du démarrage.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Tests de démarrage présents dans le backend}
+\label{tab:tests-demarrage}
+\begin{tabularx}{\textwidth}{p{3.2cm}p{4.7cm}Y}
+\toprule
+\textbf{Application} & \textbf{Classe de test} & \textbf{Vérification} \\
+\midrule
+\texttt{auth-service} & \texttt{AuthServiceApplicationTests} & Chargement du contexte d'authentification. \\
+\texttt{admin-service} & \texttt{AdminServiceApplicationTests} & Chargement du contexte d'administration. \\
+\texttt{project-service} & \texttt{ProjectServiceApplicationTests} & Chargement du contexte de gestion des dossiers. \\
+\texttt{analyste-service} & \texttt{AnalysteServiceApplicationTests} & Chargement du contexte d'analyse. \\
+\texttt{api-gateway} & \texttt{ApiGatewayApplicationTests} & Chargement de la Gateway. \\
+\texttt{discovery-server} & \texttt{DiscoveryServerApplicationTests} & Chargement du serveur Eureka. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Ces tests constituent un premier niveau de contrôle. Ils ne valident pas encore les règles métier, les contrôleurs REST, les communications avec MinIO ou RabbitMQ, ni les appels au service IA. Des tests unitaires et d'intégration dédiés sont nécessaires pour augmenter la couverture automatisée.
+
+\subsection{Test E2E Cypress}
+
+Le frontend contient une configuration Cypress et un scénario E2E nommé \texttt{manager-flow.cy.ts}. Ce scénario vérifie le parcours minimal d'un utilisateur Manager : accès à la page de connexion, saisie des identifiants, soumission du formulaire, redirection vers une route Manager et affichage du tableau de bord.
+
+\begin{table}[H]
+\centering
+\caption{Étapes vérifiées par le scénario Cypress}
+\label{tab:test-cypress}
+\begin{tabularx}{\textwidth}{p{5cm}Y}
+\toprule
+\textbf{Étape} & \textbf{Résultat attendu} \\
+\midrule
+Ouverture de la page de connexion & La route \texttt{/auth/login} est accessible. \\
+Saisie et soumission & Les identifiants sont saisis et le formulaire est exécuté. \\
+Redirection & L'URL obtenue contient \texttt{/manager}. \\
+Affichage & Le titre « Tableau de bord » est visible. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.9\textwidth]{figures/fig6_1_cypress.png}
+\vspace{5cm}
+\caption{Exécution du scénario E2E Cypress du parcours Manager.}
+\label{fig:cypress}
+\end{figure}
+
+\section{Recette fonctionnelle manuelle}
+
+La recette manuelle couvre les parcours fonctionnels des cinq Epics. Chaque scénario doit être exécuté dans l'application et associé à une preuve : capture de l'interface, réponse API, journal applicatif, objet MinIO, message RabbitMQ ou courriel visible dans Mailpit.
+
+\subsection{Sécurité et administration}
+
+\begin{longtable}{p{1.5cm}p{4.2cm}p{5.3cm}p{3cm}}
+\caption{Scénarios de recette -- sécurité et administration}
+\label{tab:recette-securite} \\
+\toprule
+\textbf{ID} & \textbf{Scénario} & \textbf{Résultat attendu} & \textbf{Preuve à conserver} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Scénario} & \textbf{Résultat attendu} & \textbf{Preuve à conserver} \\
+\midrule
+\endhead
+RF-01 & Inscription d'un utilisateur & Création du compte avec l'état \texttt{PENDING}. & Capture et enregistrement du compte. \\
+RF-02 & Connexion valide & Réception des jetons et accès à l'espace autorisé. & Dashboard et réponse réseau. \\
+RF-03 & Mot de passe erroné & Refus de connexion et création d'un événement d'accès. & Réponse HTTP et \texttt{access\_event}. \\
+RF-04 & Cinq échecs consécutifs & Passage du compte à l'état \texttt{LOCKED}. & Compteur et état du compte. \\
+RF-05 & Validation et activation & Changement d'état et affectation du rôle. & Capture et courriel Mailpit si configuré. \\
+RF-06 & Modification des rôles ou permissions & Mise à jour de la configuration et audit métier. & Écran et \texttt{data\_event}. \\
+RF-07 & Modification des Feature Flags & Modules activés ou désactivés pour l'utilisateur. & Écran et réponse API. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Dépôt, extraction et validation}
+
+\begin{longtable}{p{1.5cm}p{4.2cm}p{5.3cm}p{3cm}}
+\caption{Scénarios de recette -- dépôt et extraction}
+\label{tab:recette-extraction} \\
+\toprule
+\textbf{ID} & \textbf{Scénario} & \textbf{Résultat attendu} & \textbf{Preuve à conserver} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Scénario} & \textbf{Résultat attendu} & \textbf{Preuve à conserver} \\
+\midrule
+\endhead
+RF-08 & Dépôt d'un PDF ou DOCX valide & Dossier créé à l'état \texttt{UPLOADED} et document stocké dans MinIO. & Écran de dépôt et objet MinIO. \\
+RF-09 & Dépôt d'un fichier non accepté & Rejet d'un format autre que PDF, DOCX ou DOC. & Message d'erreur. \\
+RF-10 & Dépôt d'un fichier supérieur à 100 Mo & Rejet du téléversement. & Réponse d'erreur. \\
+RF-11 & Lancement de l'analyse P1 & Passage à \texttt{PARSING\_INITIAL}, puis traitement d'analyse. & État et journaux. \\
+RF-12 & Consultation de l'extraction P1 & Valeurs, scores de confiance et sources affichés. & Capture de la page P1. \\
+RF-13 & Ré-extraction ciblée & Mise à jour du champ ; refus après deux essais. & Réponse API avant et après. \\
+RF-14 & Validation P1 & Corrections sauvegardées et dossier \texttt{INDEXED}. & Capture et métadonnées. \\
+RF-15 & Dossier privé & Encapsulation DLP avant appel au service IA. & Journal DLP anonymisé. \\
+RF-16 & Prompt Override & Mise à jour d'un prompt ou override de dossier. & Écran de configuration. \\
+\bottomrule
+\end{longtable}
+
+La validation P1 ne bloque pas actuellement l'indexation lorsque le pays, le budget ou les hommes-mois sont absents. Le système produit un avertissement dans les journaux. Cette règle doit être prise en compte pendant la recette.
+
+\subsection{Analyse, livrables et supervision}
+
+\begin{longtable}{p{1.5cm}p{4.2cm}p{5.3cm}p{3cm}}
+\caption{Scénarios de recette -- analyse, livrables et supervision}
+\label{tab:recette-analyse} \\
+\toprule
+\textbf{ID} & \textbf{Scénario} & \textbf{Résultat attendu} & \textbf{Preuve à conserver} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{ID} & \textbf{Scénario} & \textbf{Résultat attendu} & \textbf{Preuve à conserver} \\
+\midrule
+\endhead
+RF-17 & Réception de \texttt{DOSSIER\_INDEXED} & Démarrage de l'analyse approfondie. & Log RabbitMQ et \texttt{analyste-service}. \\
+RF-18 & Extraction P2 et risques & Données P2, niveau et justification disponibles. & Écrans P2 et risques. \\
+RF-19 & Calcul P-Win & Score, axes et décision automatique enregistrés. & Écran de scoring. \\
+RF-20 & Décision \texttt{NO\_GO} ou \texttt{MANUAL} & Rapport No-Go généré et arrêt du pipeline. & Rapport ou objet MinIO. \\
+RF-21 & Matching & Taux de couverture et matrice disponibles. & Écran de matching. \\
+RF-22 & Génération des livrables et pack ZIP & Documents générés et fichiers téléchargeables. & MinIO et écran de téléchargement. \\
+RF-23 & Dashboard Manager & Indicateurs et dossiers prioritaires affichés. & Capture du dashboard. \\
+RF-24 & Validation d'un No-Go & État \texttt{NO\_GO\_CONFIRMED} et audit de décision. & Historique et statut. \\
+RF-25 & Force-Go & Justification d'au moins 50 mots et décision auditée. & Capture et piste d'audit. \\
+RF-26 & Archivage et audit & Rapport généré puis dossier \texttt{ARCHIVED}. & Rapport MinIO et statut. \\
+\bottomrule
+\end{longtable}
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.9\textwidth]{figures/fig6_2_recette.png}
+\vspace{5cm}
+\caption{Exemple de tableau de recette fonctionnelle renseigné.}
+\label{fig:recette}
+\end{figure}
+
+\section{Vérifications techniques}
+
+\subsection{Authentification et contrôle d'accès}
+
+L'authentification repose sur des JWT signés avec HS512. Les mots de passe sont hachés avec BCrypt. La durée configurée de l'Access Token est de 15 minutes. Le Refresh Token est stocké sous forme d'empreinte SHA-256 et peut être révoqué à la déconnexion.
+
+L'intercepteur Angular détecte une réponse HTTP 401. Il tente alors de renouveler le jeton, puis rejoue la requête initiale si le renouvellement aboutit. En cas d'échec, les données de session sont supprimées et l'utilisateur est redirigé vers la page de connexion.
+
+La Gateway assure le routage et la configuration CORS. Elle ne contient pas de filtre JWT dédié dans l'implémentation actuelle. La validation du jeton est effectuée par les services qui disposent d'un filtre de sécurité. Les autorisations doivent donc être vérifiées route par route.
+
+\begin{table}[H]
+\centering
+\caption{Contrôles de sécurité à exécuter}
+\label{tab:controles-securite}
+\begin{tabularx}{\textwidth}{p{5.5cm}Y}
+\toprule
+\textbf{Vérification} & \textbf{Résultat attendu} \\
+\midrule
+Jeton JWT altéré & Rejet par le service qui valide le jeton. \\
+Jeton JWT expiré & Tentative de refresh par l'intercepteur Angular. \\
+Route protégée sans authentification & Refus ou redirection vers la connexion. \\
+Gestion des utilisateurs sans autorité ADMIN & Refus d'accès par \texttt{admin-service}. \\
+Mot de passe persisté & Empreinte BCrypt ; aucun mot de passe brut. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Documents, DLP et journalisation IA}
+
+Le \texttt{project-service} accepte les fichiers PDF, DOCX et DOC, avec une limite de taille de 100 Mo. PDFBox extrait le texte des documents PDF, tandis qu'Apache POI est utilisé pour les documents Word.
+
+Pour un dossier privé, le DLP remplace les mots actifs du dictionnaire par des codes avant l'appel au service IA. Les codes sont régénérés quotidiennement. Les valeurs retournées peuvent être décapsulées avant leur exploitation.
+
+Les journaux IA enregistrent, lorsque les données sont disponibles, les tokens d'entrée et de sortie, les tokens liés au cache, le temps de traitement et le coût estimé. Ces informations permettent d'analyser les exécutions réelles, mais ne constituent pas à elles seules une mesure de précision ou de performance.
+
+\begin{table}[H]
+\centering
+\caption{Contrôles techniques liés aux documents et à l'IA}
+\label{tab:controles-documents-ia}
+\begin{tabularx}{\textwidth}{p{5.5cm}Y}
+\toprule
+\textbf{Vérification} & \textbf{Résultat attendu} \\
+\midrule
+PDF ou DOCX valide & Stockage MinIO et extraction du texte. \\
+JPG, fichier vide ou fichier supérieur à 100 Mo & Rejet avant création du dossier. \\
+Dossier privé contenant un mot sensible & Code DLP présent avant l'appel IA. \\
+Ré-extraction répétée d'un champ & Refus après deux tentatives. \\
+Appel au service IA & Journal des métriques lorsque les données sont retournées. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.9\textwidth]{figures/fig6_3_dlp_ia_logs.png}
+\vspace{5cm}
+\caption{Vérification de l'anonymisation DLP ou consultation des journaux IA.}
+\label{fig:dlp-ia}
+\end{figure}
+
+\subsection{Intégration entre services}
+
+Les flux essentiels reposent sur MinIO, RabbitMQ, Feign, Eureka et la Gateway. Les événements configurés comprennent notamment \texttt{dossier.indexed}, \texttt{dossier.submitted}, \texttt{scoring.completed}, \texttt{matching.completed}, \texttt{apo.generated} et \texttt{audit.generated}.
+
+\begin{table}[H]
+\centering
+\caption{Vérifications d'intégration à effectuer}
+\label{tab:integration}
+\begin{tabularx}{\textwidth}{p{5.5cm}Y}
+\toprule
+\textbf{Flux} & \textbf{Vérification attendue} \\
+\midrule
+\texttt{project-service} vers MinIO & Présence du TDR et du texte extrait dans les buckets concernés. \\
+\texttt{project-service} vers \texttt{ia-service} & Réponse P1 reçue et métadonnées enregistrées. \\
+\texttt{project-service} vers RabbitMQ & Publication de l'événement \texttt{dossier.indexed}. \\
+RabbitMQ vers \texttt{analyste-service} & Démarrage du pipeline approfondi. \\
+\texttt{analyste-service} vers \texttt{project-service} & Récupération du dossier et du texte via Feign. \\
+\texttt{analyste-service} vers MinIO & Livrables, rapport ou archive disponibles après génération. \\
+\texttt{auth-service} vers \texttt{admin-service} & Synchronisation de l'utilisateur via RabbitMQ. \\
+Mailpit & Courriels consultables dans l'environnement local. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.9\textwidth]{figures/fig6_4_integration.png}
+\vspace{5cm}
+\caption{Vérification d'un flux d'intégration dans RabbitMQ, MinIO ou Eureka.}
+\label{fig:integration}
+\end{figure}
+
+\section{Validation de l'IA et limites}
+
+Le service IA utilise Claude Haiku 4.5 pour les extractions, l'analyse des risques, le matching et la génération de contenus. Lorsqu'une réponse contient du texte autour du JSON attendu, le client tente d'isoler le bloc JSON. En cas d'échec d'appel, une tentative initiale et jusqu'à deux nouvelles tentatives sont effectuées avec un délai progressif.
+
+La précision de l'IA ne peut pas être exprimée scientifiquement sans un jeu de documents de référence et une annotation manuelle des valeurs attendues. Cependant, plusieurs garde-fous sont intégrés à l'application : scores de confiance, sources extraites, corrections humaines des phases P1 et P2, validation des risques, limite de deux ré-extractions, journalisation des appels IA et arrêt du pipeline lorsque la décision est \texttt{NO\_GO} ou \texttt{MANUAL}.
+
+Une campagne de validation quantitative pourra être menée ultérieurement en constituant une vérité terrain, en comparant chaque valeur extraite à la valeur attendue et en calculant les résultats par champ, par type de document et par langue. Les mesures de temps, de coût et d'utilisation du cache devront également être extraites des journaux réels.
+
+\section{Bilan et conclusion}
+
+Les dépôts contiennent six tests de démarrage Spring Boot et un scénario Cypress pour le parcours Manager. Ces éléments confirment l'existence d'une base de test, mais ils ne remplacent pas une couverture fonctionnelle complète. La recette proposée couvre les parcours principaux des cinq Epics et précise, pour chaque cas, la preuve à conserver.
+
+Les mécanismes techniques essentiels sont implémentés : JWT HS512, BCrypt, Refresh Token haché, DLP, contrôle des fichiers, limite de ré-extraction, messagerie RabbitMQ, stockage MinIO, génération documentaire et audit IA. Les améliorations prioritaires concernent l'ajout de tests unitaires métier, de tests d'intégration automatisés, de tests de sécurité, de tests de charge et d'un jeu de validation IA annoté.
+
+Cette démarche offre une présentation adaptée à un jury de PFE : elle met en évidence les mécanismes réellement développés, distingue les éléments vérifiés des éléments à mesurer et évite d'annoncer des résultats non accompagnés de preuves.

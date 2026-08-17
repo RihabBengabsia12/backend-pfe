@@ -38,6 +38,8 @@ public class ExtractionResponseDto {
 
     // Métriques IA (FinOps & Perf)
     private Integer tokenUsage;
+    private Integer inputTokens;
+    private Integer outputTokens;
     private Integer processingTimeMs;
     private Double estimatedCost;
 }

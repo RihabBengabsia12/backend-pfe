@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1080" viewBox="0 0 1600 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Architecture générale de la plateforme ProjectIQ</title>
+  <desc id="desc">Architecture microservices de ProjectIQ avec Angular, API Gateway, Eureka, services métier Spring Boot, service IA Python, Claude API, RabbitMQ, PostgreSQL, MinIO et Docker Compose.</desc>
+  <defs>
+    <style>
+      .bg { fill:#f8fafc; }
+      .title { font-family:Arial, Helvetica, sans-serif; font-size:30px; font-weight:700; fill:#183b63; }
+      .subtitle { font-family:Arial, Helvetica, sans-serif; font-size:15px; fill:#62748a; }
+      .section { font-family:Arial, Helvetica, sans-serif; font-size:14px; font-weight:700; letter-spacing:.8px; fill:#47657f; }
+      .box-title { font-family:Arial, Helvetica, sans-serif; font-size:17px; font-weight:700; fill:#183b63; }
+      .box-sub { font-family:Arial, Helvetica, sans-serif; font-size:13px; fill:#50657c; }
+      .small { font-family:Arial, Helvetica, sans-serif; font-size:12px; fill:#50657c; }
+      .label { font-family:Arial, Helvetica, sans-serif; font-size:12px; font-weight:700; fill:#45647d; }
+      .border { stroke:#b9cadb; stroke-width:1.5; }
+      .arrow { stroke:#6085a8; stroke-width:2.2; fill:none; marker-end:url(#arrowHead); }
+      .event { stroke:#c48731; stroke-width:2.1; fill:none; stroke-dasharray:7 5; marker-end:url(#eventHead); }
+      .discovery { stroke:#8b76b5; stroke-width:1.8; fill:none; stroke-dasharray:4 4; }
+    </style>
+    <marker id="arrowHead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#6085a8"/></marker>
+    <marker id="eventHead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#c48731"/></marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#1e3a5f" flood-opacity=".12"/></filter>
+  </defs>
+
+  <rect class="bg" width="1600" height="1080"/>
+  <text x="800" y="58" text-anchor="middle" class="title">Architecture générale de la plateforme ProjectIQ</text>
+  <text x="800" y="85" text-anchor="middle" class="subtitle">Architecture microservices conteneurisée pour l’analyse des dossiers d’appels d’offres</text>
+
+  <!-- boundary -->
+  <rect x="45" y="115" width="1510" height="885" rx="22" fill="#ffffff" stroke="#c9d9e8" stroke-width="2"/>
+  <rect x="75" y="130" width="202" height="30" rx="15" fill="#e6f1fa"/>
+  <text x="176" y="151" text-anchor="middle" class="section">ENVIRONNEMENT DOCKER COMPOSE</text>
+
+  <!-- actors -->
+  <text x="90" y="201" class="section">UTILISATEURS</text>
+  <g filter="url(#shadow)">
+    <rect x="90" y="220" width="155" height="58" rx="12" fill="#edf6fd" class="border"/>
+    <rect x="266" y="220" width="155" height="58" rx="12" fill="#edf6fd" class="border"/>
+    <rect x="442" y="220" width="155" height="58" rx="12" fill="#edf6fd" class="border"/>
+  </g>
+  <text x="167" y="246" text-anchor="middle" class="box-title">Administrateur</text><text x="167" y="266" text-anchor="middle" class="box-sub">Gouvernance</text>
+  <text x="343" y="246" text-anchor="middle" class="box-title">Analyste</text><text x="343" y="266" text-anchor="middle" class="box-sub">Analyse et livrables</text>
+  <text x="519" y="246" text-anchor="middle" class="box-title">Manager</text><text x="519" y="266" text-anchor="middle" class="box-sub">Décision et suivi</text>
+
+  <!-- frontend -->
+  <text x="90" y="337" class="section">COUCHE DE PRÉSENTATION</text>
+  <g filter="url(#shadow)"><rect x="90" y="355" width="507" height="95" rx="14" fill="#e8f4fd" stroke="#8dc1e7" stroke-width="2"/></g>
+  <text x="344" y="392" text-anchor="middle" class="box-title">Frontend Angular / TypeScript</text>
+  <text x="344" y="416" text-anchor="middle" class="box-sub">Interfaces Administrateur · Analyste · Manager</text>
+  <text x="344" y="437" text-anchor="middle" class="small">Tableaux de bord, analyse, scoring, matching, validation et archivage</text>
+
+  <!-- gateway & discovery -->
+  <text x="685" y="201" class="section">POINT D’ENTRÉE ET DÉCOUVERTE</text>
+  <g filter="url(#shadow)"><rect x="685" y="220" width="285" height="92" rx="14" fill="#eaf7f1" stroke="#8bc9ae" stroke-width="2"/></g>
+  <text x="827" y="257" text-anchor="middle" class="box-title">API Gateway</text>
+  <text x="827" y="281" text-anchor="middle" class="box-sub">Routage sécurisé des API REST</text>
+  <g filter="url(#shadow)"><rect x="1010" y="220" width="235" height="92" rx="14" fill="#f2effa" stroke="#baa9dd" stroke-width="2"/></g>
+  <text x="1127" y="257" text-anchor="middle" class="box-title">Eureka Discovery</text>
+  <text x="1127" y="281" text-anchor="middle" class="box-sub">Découverte des services</text>
+
+  <!-- Services -->
+  <text x="90" y="515" class="section">COUCHE MÉTIER — MICROSERVICES SPRING BOOT</text>
+  <g filter="url(#shadow)">
+    <rect x="90" y="537" width="250" height="112" rx="14" fill="#f1f7fc" stroke="#aac9e2" stroke-width="2"/>
+    <rect x="365" y="537" width="250" height="112" rx="14" fill="#f1f7fc" stroke="#aac9e2" stroke-width="2"/>
+    <rect x="640" y="537" width="250" height="112" rx="14" fill="#f1f7fc" stroke="#aac9e2" stroke-width="2"/>
+    <rect x="915" y="537" width="250" height="112" rx="14" fill="#f1f7fc" stroke="#aac9e2" stroke-width="2"/>
+  </g>
+  <text x="215" y="573" text-anchor="middle" class="box-title">Auth Service</text>
+  <text x="215" y="597" text-anchor="middle" class="box-sub">Comptes · JWT · session</text><text x="215" y="619" text-anchor="middle" class="small">Authentification et sécurité</text>
+  <text x="490" y="573" text-anchor="middle" class="box-title">Admin Service</text>
+  <text x="490" y="597" text-anchor="middle" class="box-sub">Rôles · permissions</text><text x="490" y="619" text-anchor="middle" class="small">Référentiels et configurations</text>
+  <text x="765" y="573" text-anchor="middle" class="box-title">Project Service</text>
+  <text x="765" y="597" text-anchor="middle" class="box-sub">Dossiers · documents · packs</text><text x="765" y="619" text-anchor="middle" class="small">Workflow et validations</text>
+  <text x="1040" y="573" text-anchor="middle" class="box-title">Analyste Service</text>
+  <text x="1040" y="597" text-anchor="middle" class="box-sub">Extraction · P-Win · matching</text><text x="1040" y="619" text-anchor="middle" class="small">Livrables et rapport d’audit</text>
+
+  <!-- IA -->
+  <text x="1245" y="337" class="section">COUCHE IA</text>
+  <g filter="url(#shadow)"><rect x="1245" y="355" width="250" height="95" rx="14" fill="#fff5e9" stroke="#e8bb78" stroke-width="2"/></g>
+  <text x="1370" y="390" text-anchor="middle" class="box-title">Service IA Python</text>
+  <text x="1370" y="414" text-anchor="middle" class="box-sub">Prompts · JSON · métriques</text><text x="1370" y="435" text-anchor="middle" class="small">Orchestration des traitements</text>
+  <g filter="url(#shadow)"><rect x="1245" y="475" width="250" height="78" rx="14" fill="#fff9e5" stroke="#e6c766" stroke-width="2"/></g>
+  <text x="1370" y="507" text-anchor="middle" class="box-title">Claude API</text><text x="1370" y="530" text-anchor="middle" class="box-sub">LLM externe</text>
+
+  <!-- Infrastructure -->
+  <text x="90" y="725" class="section">PERSISTANCE, STOCKAGE ET ÉVÉNEMENTS</text>
+  <g filter="url(#shadow)">
+    <rect x="90" y="748" width="310" height="120" rx="14" fill="#edf7ef" stroke="#91c49b" stroke-width="2"/>
+    <rect x="450" y="748" width="310" height="120" rx="14" fill="#eef5fb" stroke="#94bddf" stroke-width="2"/>
+    <rect x="810" y="748" width="310" height="120" rx="14" fill="#fff4e8" stroke="#e8ba7b" stroke-width="2"/>
+  </g>
+  <text x="245" y="790" text-anchor="middle" class="box-title">PostgreSQL</text><text x="245" y="815" text-anchor="middle" class="box-sub">Données métier structurées</text><text x="245" y="839" text-anchor="middle" class="small">Dossiers · scoring · décisions · audit</text>
+  <text x="605" y="790" text-anchor="middle" class="box-title">MinIO</text><text x="605" y="815" text-anchor="middle" class="box-sub">Stockage objet documentaire</text><text x="605" y="839" text-anchor="middle" class="small">TDR · DOCX · rapports · ZIP</text>
+  <text x="965" y="790" text-anchor="middle" class="box-title">RabbitMQ</text><text x="965" y="815" text-anchor="middle" class="box-sub">Événements asynchrones</text><text x="965" y="839" text-anchor="middle" class="small">Génération · notification · archivage</text>
+
+  <!-- arrows -->
+  <path d="M167 278 L167 355" class="arrow"/><path d="M343 278 L343 355" class="arrow"/><path d="M519 278 L519 355" class="arrow"/>
+  <path d="M597 402 L685 266" class="arrow"/><text x="617" y="322" class="label">HTTPS / REST</text>
+  <path d="M827 312 L827 492 L215 492 L215 537" class="arrow"/>
+  <path d="M827 492 L490 492 L490 537" class="arrow"/>
+  <path d="M827 492 L765 492 L765 537" class="arrow"/>
+  <path d="M827 492 L1040 492 L1040 537" class="arrow"/>
+  <path d="M1040 537 L1040 492 L1245 402" class="arrow"/><text x="1127" y="471" class="label">API REST</text>
+  <path d="M1370 450 L1370 475" class="arrow"/>
+  <path d="M215 649 L215 748" class="arrow"/><path d="M490 649 L300 720 L245 748" class="arrow"/>
+  <path d="M765 649 L600 748" class="arrow"/><path d="M1040 649 L760 720 L605 748" class="arrow"/>
+  <path d="M765 649 L965 748" class="event"/><path d="M1040 649 L965 748" class="event"/>
+  <path d="M215 537 L1127 312" class="discovery"/><path d="M490 537 L1127 312" class="discovery"/><path d="M765 537 L1127 312" class="discovery"/><path d="M1040 537 L1127 312" class="discovery"/>
+
+  <!-- legend -->
+  <line x1="1180" y1="774" x2="1235" y2="774" class="arrow"/><text x="1250" y="779" class="small">Appel synchrone / API REST</text>
+  <line x1="1180" y1="810" x2="1235" y2="810" class="event"/><text x="1250" y="815" class="small">Événement asynchrone</text>
+  <line x1="1180" y1="846" x2="1235" y2="846" class="discovery"/><text x="1250" y="851" class="small">Enregistrement / découverte</text>
+
+  <line x1="90" y1="925" x2="1510" y2="925" stroke="#d8e3ec" stroke-width="1"/>
+  <text x="800" y="957" text-anchor="middle" class="subtitle">Source : élaboré par l’auteure à partir de l’architecture implémentée de ProjectIQ.</text>
+</svg>

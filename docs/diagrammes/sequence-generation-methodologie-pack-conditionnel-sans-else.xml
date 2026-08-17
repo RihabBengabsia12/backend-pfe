@@ -1,0 +1,180 @@
+﻿<mxGraphModel dx="1585" dy="865" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="title" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontStyle=1;fontSize=18;" value="Diagramme de séquence de géneration conditionnelle de la méthodologie et du pack final" vertex="1">
+      <mxGeometry height="30" width="960" x="265" y="15" as="geometry" />
+    </mxCell>
+    <mxCell id="actor" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;strokeWidth=2;fontSize=11;" value="Analyste" vertex="1">
+      <mxGeometry height="70" width="50" x="55" y="70" as="geometry" />
+    </mxCell>
+    <mxCell id="front" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;fontSize=11;" value="Frontend Angular&#xa;RapportFinalPageComponent" vertex="1">
+      <mxGeometry height="760" width="170" x="240" y="65" as="geometry" />
+    </mxCell>
+    <mxCell id="controller" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;fontSize=11;" value="project-service&#xa;ApoController" vertex="1">
+      <mxGeometry height="760" width="165" x="520" y="65" as="geometry" />
+    </mxCell>
+    <mxCell id="assembly" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;fontSize=11;" value="analyste-service&#xa;ApoAssemblyService" vertex="1">
+      <mxGeometry height="760" width="175" x="800" y="65" as="geometry" />
+    </mxCell>
+    <mxCell id="ia" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;fontSize=11;" value="ia-service&#xa;ClaudeClient" vertex="1">
+      <mxGeometry height="760" width="145" x="1080" y="65" as="geometry" />
+    </mxCell>
+    <mxCell id="minio" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;fontSize=11;" value="MinIO&#xa;livrables" vertex="1">
+      <mxGeometry height="760" width="105" x="1315" y="65" as="geometry" />
+    </mxCell>
+    <mxCell id="alt" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;rounded=0;html=1;align=left;verticalAlign=top;spacingTop=5;spacingLeft=7;dashed=1;fillColor=none;fillOpacity=0;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=11;" value="alt [matching compatible]" vertex="1">
+      <mxGeometry height="590" width="1395" x="25" y="160" as="geometry" />
+    </mxCell>
+    <mxCell id="divider" edge="1" parent="1" style="endArrow=none;startArrow=none;dashed=1;strokeWidth=2;html=1;">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="25" y="480" as="sourcePoint" />
+        <mxPoint x="1420" y="480" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="altIncompatible" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;text;html=1;align=left;verticalAlign=middle;fontStyle=1;fontSize=11;fillColor=#ffffff;strokeColor=none;" value="alt [matching incompatible]" vertex="1">
+      <mxGeometry height="18" width="250" x="40" y="480" as="geometry" />
+    </mxCell>
+    <mxCell id="a1" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Cliquer sur « Generer la methodologie »">
+      <mxGeometry relative="1" x="-0.0455" y="15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="105" y="210" as="sourcePoint" />
+        <mxPoint x="325" y="210" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a2" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="POST /api/apo/{id}/generate-methodology">
+      <mxGeometry relative="1" x="-0.0253" y="15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="325" y="225" as="sourcePoint" />
+        <mxPoint x="602" y="225" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a3" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="202 Accepted : generation lancee">
+      <mxGeometry relative="1" x="0.0253" y="-10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="602" y="250" as="sourcePoint" />
+        <mxPoint x="325" y="250" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a4" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Afficher « Generation de la methodologie en cours »">
+      <mxGeometry relative="1" x="0.1364" y="-15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="325" y="275" as="sourcePoint" />
+        <mxPoint x="105" y="275" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a5" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="genererMethodologie(...)">
+      <mxGeometry relative="1" x="0.0316" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="603" y="320" as="sourcePoint" />
+        <mxPoint x="888" y="320" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a6" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="generateMethodologieViaClaude(...)">
+      <mxGeometry relative="1" x="0.0038" y="15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="887" y="335" as="sourcePoint" />
+        <mxPoint x="1152" y="335" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a7" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Sections de methodologie">
+      <mxGeometry relative="1" x="-0.0038" y="-10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="1152" y="360" as="sourcePoint" />
+        <mxPoint x="887" y="360" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a8" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Exporter Methodologie DOCX">
+      <mxGeometry relative="1" x="0.0542" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="887" y="390" as="sourcePoint" />
+        <mxPoint x="1367" y="390" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a9" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Chemin MinIO de la methodologie">
+      <mxGeometry relative="1" x="-0.0542" y="-15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="1367" y="415" as="sourcePoint" />
+        <mxPoint x="887" y="415" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="a10" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Methodologie disponible ; activer « Finaliser le pack »">
+      <mxGeometry relative="1" x="-0.0469" y="-15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="602" y="445" as="sourcePoint" />
+        <mxPoint x="325" y="445" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="b1" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Cliquer sur « Finaliser le pack »">
+      <mxGeometry relative="1" x="0.0455" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="105" y="520" as="sourcePoint" />
+        <mxPoint x="325" y="520" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="b2" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="POST /api/apo/{id}/assemble-pack">
+      <mxGeometry relative="1" x="-0.0253" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="325" y="550" as="sourcePoint" />
+        <mxPoint x="602" y="550" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="b3" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="202 Accepted : assemblage lance">
+      <mxGeometry relative="1" x="-0.0469" y="-15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="602" y="575" as="sourcePoint" />
+        <mxPoint x="325" y="575" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="b4" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="Assembler APO et rapport ; ajouter la methodologie si disponible">
+      <mxGeometry relative="1" x="0.0386" y="15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="602" y="605" as="sourcePoint" />
+        <mxPoint x="887" y="605" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="b5" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="generateTextsViaClaude(...)">
+      <mxGeometry relative="1" x="-0.0717" y="15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="887" y="635" as="sourcePoint" />
+        <mxPoint x="1152" y="635" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="b6" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Textes APO et rapport">
+      <mxGeometry relative="1" x="-0.0038" y="-10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="1152" y="660" as="sourcePoint" />
+        <mxPoint x="887" y="660" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="b7" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Exporter APO DOCX, Rapport DOCX et Pack ZIP">
+      <mxGeometry relative="1" x="0.0542" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="887" y="690" as="sourcePoint" />
+        <mxPoint x="1367" y="690" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="b8" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Pack : APO + rapport + methodologie si disponible">
+      <mxGeometry relative="1" x="-0.0542" y="-15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="1367" y="715" as="sourcePoint" />
+        <mxPoint x="887" y="715" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="b9" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="sendEvent(APO_GENERATED)">
+      <mxGeometry relative="1" x="-0.0469" y="-10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="602" y="740" as="sourcePoint" />
+        <mxPoint x="325" y="740" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="b10" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Afficher les livrables et le pack disponibles">
+      <mxGeometry relative="1" x="-0.0455" y="-10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="325" y="780" as="sourcePoint" />
+        <mxPoint x="105" y="780" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+  </root>
+</mxGraphModel>
+

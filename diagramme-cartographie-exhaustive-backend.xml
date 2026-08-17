@@ -1,0 +1,278 @@
+<mxGraphModel dx="2600" dy="1650" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1684" pageHeight="1191" math="0" shadow="0">
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+    <mxCell id="title" value="Cartographie exhaustive des classes Java du backend ProjectIQ" style="text;html=1;align=center;verticalAlign=middle;fontStyle=1;fontSize=20;" vertex="1" parent="1"><mxGeometry x="600" y="20" width="1400" height="35" as="geometry"/></mxCell>
+    <mxCell id="subtitle" value="Document annexe - classes regroupees par microservice et package. Les dependances detaillees sont presentees dans les diagrammes de conception et de sequence." style="text;html=1;align=center;verticalAlign=middle;fontSize=11;" vertex="1" parent="1"><mxGeometry x="400" y="58" width="1800" height="25" as="geometry"/></mxCell>
+    <mxCell id="legend" value="Cette figure inventorie les 218 fichiers Java du code principal. Elle est prevue pour une annexe en format A3 paysage." style="shape=note;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;fontSize=10;" vertex="1" parent="1"><mxGeometry x="35" y="95" width="480" height="45" as="geometry"/></mxCell>
+    <mxCell id="pkg1" value="auth-service - securite" style="swimlane;html=1;startSize=30;horizontal=1;strokeWidth=2;fontStyle=1;fontSize=14;fillColor=#ffffff;" vertex="1" parent="1"><mxGeometry x="30" y="160" width="405" height="1335" as="geometry"/></mxCell>
+    <mxCell id="cls2" value="&lt;&lt;authservice&gt;&gt;
+AuthServiceApplication" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg1"><mxGeometry x="50" y="205" width="175" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls3" value="&lt;&lt;consumer&gt;&gt;
+EmailConsumer" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg1"><mxGeometry x="50" y="277" width="175" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls4" value="&lt;&lt;DTO&gt;&gt;
+AccountResponse
+ChangePasswordRequest
+EmailNotificationDTO
+LoginRequest
+LoginResponse
+RegisterRequest
+ResetPasswordRequest
+UserSyncDTO" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg1"><mxGeometry x="50" y="349" width="175" height="126" as="geometry"/></mxCell>
+    <mxCell id="cls5" value="&lt;&lt;repository&gt;&gt;
+AccessEventRepository
+AccountRepository
+CredentialAccountRepository
+RefreshTokenRepository" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg1"><mxGeometry x="50" y="489" width="175" height="78" as="geometry"/></mxCell>
+    <mxCell id="cls6" value="&lt;&lt;config&gt;&gt;
+AdminInitializer
+RabbitMQConfig
+SecurityConfig" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg1"><mxGeometry x="237" y="205" width="175" height="66" as="geometry"/></mxCell>
+    <mxCell id="cls7" value="&lt;&lt;controller&gt;&gt;
+AuthController" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg1"><mxGeometry x="237" y="285" width="175" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls8" value="&lt;&lt;entity&gt;&gt;
+AccessEvent
+CredentialAccount
+RefreshToken" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg1"><mxGeometry x="237" y="357" width="175" height="66" as="geometry"/></mxCell>
+    <mxCell id="cls9" value="&lt;&lt;exception&gt;&gt;
+AuthException
+GlobalExceptionHandler" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg1"><mxGeometry x="237" y="437" width="175" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls10" value="&lt;&lt;security&gt;&gt;
+JwtFilter
+JwtService" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg1"><mxGeometry x="237" y="509" width="175" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls11" value="&lt;&lt;service&gt;&gt;
+AuditService
+AuthService" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg1"><mxGeometry x="237" y="581" width="175" height="58" as="geometry"/></mxCell>
+    <mxCell id="pkg12" value="admin-service - administration" style="swimlane;html=1;startSize=30;horizontal=1;strokeWidth=2;fontStyle=1;fontSize=14;fillColor=#ffffff;" vertex="1" parent="1"><mxGeometry x="455" y="160" width="405" height="1335" as="geometry"/></mxCell>
+    <mxCell id="cls13" value="&lt;&lt;adminservice&gt;&gt;
+AdminServiceApplication" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg12"><mxGeometry x="475" y="205" width="175" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls14" value="&lt;&lt;consumer&gt;&gt;
+EmailConsumer
+UserSyncListener" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg12"><mxGeometry x="475" y="277" width="175" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls15" value="&lt;&lt;DTO&gt;&gt;
+CreateUserRequest
+EmailNotificationDTO
+FeatureFlagDTO
+PermissionGroupDTO
+RoleRequest
+UserResponse
+UserSyncDTO" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg12"><mxGeometry x="475" y="349" width="175" height="114" as="geometry"/></mxCell>
+    <mxCell id="cls16" value="&lt;&lt;exception&gt;&gt;
+AdminException
+GlobalExceptionHandler" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg12"><mxGeometry x="475" y="477" width="175" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls17" value="&lt;&lt;repository&gt;&gt;
+AppUserRepository
+DataEventRepository
+FeatureFlagRepository
+PermissionRepository
+RoleRepository" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg12"><mxGeometry x="475" y="549" width="175" height="90" as="geometry"/></mxCell>
+    <mxCell id="cls18" value="&lt;&lt;config&gt;&gt;
+JwtAuthenticationFilter
+JwtUtils
+RabbitMQConfig
+SecurityConfig" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg12"><mxGeometry x="662" y="205" width="175" height="78" as="geometry"/></mxCell>
+    <mxCell id="cls19" value="&lt;&lt;controller&gt;&gt;
+AuditController
+DashboardController
+FeatureFlagController
+PermissionController
+ProfileController
+RoleController
+UserController" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg12"><mxGeometry x="662" y="297" width="175" height="114" as="geometry"/></mxCell>
+    <mxCell id="cls20" value="&lt;&lt;entity&gt;&gt;
+AppUser
+DataEvent
+FeatureFlag
+Permission
+Role" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg12"><mxGeometry x="662" y="425" width="175" height="90" as="geometry"/></mxCell>
+    <mxCell id="cls21" value="&lt;&lt;security&gt;&gt;
+SecurityUtils" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg12"><mxGeometry x="662" y="529" width="175" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls22" value="&lt;&lt;service&gt;&gt;
+AuditService
+DashboardService
+FeatureFlagService
+RoleService
+UserService" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg12"><mxGeometry x="662" y="601" width="175" height="90" as="geometry"/></mxCell>
+    <mxCell id="pkg23" value="project-service - dossiers et validation" style="swimlane;html=1;startSize=30;horizontal=1;strokeWidth=2;fontStyle=1;fontSize=14;fillColor=#ffffff;" vertex="1" parent="1"><mxGeometry x="880" y="160" width="620" height="1335" as="geometry"/></mxCell>
+    <mxCell id="cls24" value="&lt;&lt;client&gt;&gt;
+AnalysteServiceClient
+IaServiceClient" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg23"><mxGeometry x="900" y="205" width="282" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls25" value="&lt;&lt;controller&gt;&gt;
+AiLogController
+AnonymizationController
+AuditController
+ConfigIaController
+DelegationController
+DlpVaultController
+DocumentController
+DossierController
+ExtractionController
+ValidationController" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg23"><mxGeometry x="900" y="277" width="282" height="150" as="geometry"/></mxCell>
+    <mxCell id="cls26" value="&lt;&lt;entity&gt;&gt;
+AiLog
+AnonymizationDict
+AnonymizationToken
+AuditEntry
+Delegation
+Dossier
+DossierPromptOverride
+ExtractionMetadata
+ValidationToken" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg23"><mxGeometry x="900" y="441" width="282" height="138" as="geometry"/></mxCell>
+    <mxCell id="cls27" value="&lt;&lt;model&gt;&gt;
+DossierStatus" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg23"><mxGeometry x="900" y="593" width="282" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls28" value="&lt;&lt;repository&gt;&gt;
+AiLogRepository
+AnonymizationDictRepository
+AnonymizationTokenRepository
+AuditEntryRepository
+DelegationRepository
+DossierPromptOverrideRepository
+DossierRepository
+ExtractionMetadataRepository
+ValidationTokenRepository" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg23"><mxGeometry x="900" y="665" width="282" height="138" as="geometry"/></mxCell>
+    <mxCell id="cls29" value="&lt;&lt;config&gt;&gt;
+FeignConfig
+JwtAuthenticationFilter
+JwtUtils
+MinIOConfig
+RabbitMQConfig
+SecurityConfig" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg23"><mxGeometry x="1195" y="205" width="282" height="102" as="geometry"/></mxCell>
+    <mxCell id="cls30" value="&lt;&lt;dto&gt;&gt;
+ChampResult
+DossierEvent
+EmailNotificationDTO
+ExtractionRequestDto
+ExtractionResponseDto
+MatchingResultDto
+NoGoDecisionRequestDto
+PromptUpdateDto
+ReextractionRequestDto
+ValidateP1RequestDto" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg23"><mxGeometry x="1195" y="321" width="282" height="150" as="geometry"/></mxCell>
+    <mxCell id="cls31" value="&lt;&lt;exception&gt;&gt;
+GlobalExceptionHandler" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg23"><mxGeometry x="1195" y="485" width="282" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls32" value="&lt;&lt;messaging&gt;&gt;
+EventConsumer
+EventPublisher" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg23"><mxGeometry x="1195" y="557" width="282" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls33" value="&lt;&lt;projectservice&gt;&gt;
+ProjectServiceApplication" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg23"><mxGeometry x="1195" y="629" width="282" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls34" value="&lt;&lt;service&gt;&gt;
+AnonymizationService
+AuditTrailService
+DelegationService
+DlpService
+DocumentParserService
+DossierService
+EmailService
+ExtractionService
+StorageService
+SystemAuditClientService
+ValidationService
+ValidationTokenService" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg23"><mxGeometry x="1195" y="701" width="282" height="174" as="geometry"/></mxCell>
+    <mxCell id="pkg35" value="analyste-service - analyse et livrables" style="swimlane;html=1;startSize=30;horizontal=1;strokeWidth=2;fontStyle=1;fontSize=14;fillColor=#ffffff;" vertex="1" parent="1"><mxGeometry x="1520" y="160" width="1040" height="1335" as="geometry"/></mxCell>
+    <mxCell id="cls36" value="&lt;&lt;analysteservice&gt;&gt;
+AnalysteServiceApplication" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg35"><mxGeometry x="1540" y="205" width="492" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls37" value="&lt;&lt;client&gt;&gt;
+IaServiceClient
+ProjectServiceClient" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg35"><mxGeometry x="1540" y="277" width="492" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls38" value="&lt;&lt;config&gt;&gt;
+FeignConfig
+MinIOConfig
+RabbitMQConfig
+ScoringConfigLoader" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg35"><mxGeometry x="1540" y="349" width="492" height="78" as="geometry"/></mxCell>
+    <mxCell id="cls39" value="&lt;&lt;dto&gt;&gt;
+AuditEntryDto
+DossierDto
+NoGoDecisionRequestDto" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg35"><mxGeometry x="1540" y="441" width="492" height="66" as="geometry"/></mxCell>
+    <mxCell id="cls40" value="&lt;&lt;ia&gt;&gt;
+ApoGenerationContextDto
+ApoTextsResponseDto
+AuditContextDto
+AuditReportResponseDto
+ChampResultDto
+ChecklistRequestDto
+ChecklistResponseDto
+ExpertMatchRequestDto
+ExpertMatchResponseDto
+ExtractionRequestDto
+ExtractionResponseDto
+MatchingContextDto
+MatrixResponseDto
+MethodologieResponseDto
+NoGoContextDto
+NoGoReportResponseDto
+RequirementsResponseDto
+RiskAnalysisResponseDto
+RiskItemDto" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg35"><mxGeometry x="1540" y="521" width="492" height="258" as="geometry"/></mxCell>
+    <mxCell id="cls41" value="&lt;&lt;repository&gt;&gt;
+AnalyseDossierRepository
+ApoDataRepository
+CompetenceRepository
+ExpertProfilRepository
+IaAuditLogRepository
+MatchingResultRepository
+NoGoReportRepository
+PwinScoreRepository
+ReferenceRepository
+ScoringConfigRepository
+SystemAuditEntryRepository" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg35"><mxGeometry x="1540" y="793" width="492" height="162" as="geometry"/></mxCell>
+    <mxCell id="cls42" value="&lt;&lt;calculators&gt;&gt;
+AxeCalculator
+AxeConcurrenceCalculator
+AxeConformiteCalculator
+AxeFaisabiliteCalculator
+AxeRentabiliteCalculator
+AxeRisquesCalculator" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg35"><mxGeometry x="2045" y="205" width="492" height="102" as="geometry"/></mxCell>
+    <mxCell id="cls43" value="&lt;&lt;controller&gt;&gt;
+AnalyseController
+ApoController
+DashboardController
+ExportController
+IaAuditController
+MatchingController
+ReferentielController
+ScoringController
+SseController
+SystemAuditController" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg35"><mxGeometry x="2045" y="321" width="492" height="150" as="geometry"/></mxCell>
+    <mxCell id="cls44" value="&lt;&lt;matchers&gt;&gt;
+ClientMatcher
+CompetencesMatcher
+ExpertsMatcher
+ReferencesMatcher" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg35"><mxGeometry x="2045" y="485" width="492" height="78" as="geometry"/></mxCell>
+    <mxCell id="cls45" value="&lt;&lt;matching&gt;&gt;
+MatchingEngine" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg35"><mxGeometry x="2045" y="577" width="492" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls46" value="&lt;&lt;messaging&gt;&gt;
+AnalysteEventConsumer
+AnalysteEventPublisher" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg35"><mxGeometry x="2045" y="649" width="492" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls47" value="&lt;&lt;model&gt;&gt;
+AnalyseDossier
+ApoData
+Competence
+ExpertProfil
+IaAuditLog
+MatchingResult
+NoGoReport
+PwinScore
+Reference
+ScoringConfig
+SystemAuditEntry" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg35"><mxGeometry x="2045" y="721" width="492" height="162" as="geometry"/></mxCell>
+    <mxCell id="cls48" value="&lt;&lt;scoring&gt;&gt;
+ScoringConfigService
+ScoringEngine" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg35"><mxGeometry x="2045" y="897" width="492" height="58" as="geometry"/></mxCell>
+    <mxCell id="cls49" value="&lt;&lt;service&gt;&gt;
+AnalyseDeepService
+ApoAssemblyService
+AuditGenerationService
+ChecklistService
+DlpService
+DocumentExportService
+NoGoReportService
+PackGeneratorService
+PackStorageService
+SseService
+SystemAuditService" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=1.2;fontSize=8;fillColor=#ffffff;align=left;spacingLeft=5;" vertex="1" parent="pkg35"><mxGeometry x="2045" y="969" width="492" height="162" as="geometry"/></mxCell>
+    <mxCell id="gateway" value="api-gateway`nApiGatewayApplication" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=2;fontSize=10;fillColor=#ffffff;" vertex="1" parent="1"><mxGeometry x="35" y="1525" width="310" height="58" as="geometry"/></mxCell>
+    <mxCell id="discovery" value="discovery-server`nDiscoveryServerApplication" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=2;fontSize=10;fillColor=#ffffff;" vertex="1" parent="1"><mxGeometry x="375" y="1525" width="310" height="58" as="geometry"/></mxCell>
+    <mxCell id="external" value="Composants externes relies au backend`nRabbitMQ | MinIO | PostgreSQL | ia-service / Claude | Mailpit" style="swimlane;html=1;startSize=22;horizontal=1;strokeWidth=2;fontSize=10;fillColor=#ffffff;" vertex="1" parent="1"><mxGeometry x="720" y="1525" width="750" height="58" as="geometry"/></mxCell>
+    <mxCell id="note" value="Les dependances entre Controller, Service et Repository sont volontairement detaillees dans le diagramme applicatif global. Les relations entre entites sont detaillees dans les diagrammes des entites." style="shape=note;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1510" y="1525" width="850" height="58" as="geometry"/></mxCell>
+  </root>
+</mxGraphModel>

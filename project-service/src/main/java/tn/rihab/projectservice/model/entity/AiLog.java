@@ -31,6 +31,12 @@ public class AiLog {
     @Column(name = "tokens_consumed")
     private Integer tokensConsumed;
 
+    @Column(name = "input_tokens")
+    private Integer inputTokens;
+
+    @Column(name = "output_tokens")
+    private Integer outputTokens;
+
     @Column(name = "estimated_cost")
     private Double estimatedCost;
 

@@ -96,6 +96,10 @@ public class MatchingResult {
     @Column(name = "secteur_ao", length = 200)
     private String secteurAo;
 
+    /** [[TYPE_CONTRAT]] — type de contrat détecté */
+    @Column(name = "type_contrat", length = 100)
+    private String typeContrat;
+
     /** [[ALIGNEMENT_STRATEGIQUE]] — "Oui"|"Partiel"|"Non" */
     @Column(name = "alignement_strategique", length = 20)
     private String alignementStrategique;

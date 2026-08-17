@@ -1,0 +1,378 @@
+% À ajouter dans le préambule principal si nécessaire :
+% \usepackage[T1]{fontenc}
+% \usepackage[utf8]{inputenc}
+% \usepackage[french]{babel}
+% \usepackage{booktabs,longtable,tabularx,array}
+% \usepackage{graphicx,float}
+% \usepackage{hyperref}
+% \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\chapter{Implémentation fonctionnelle}
+\label{chap:implementation}
+
+\section{Introduction}
+
+Ce chapitre présente l’implémentation de ProjectIQ à partir des composants effectivement développés : une application web Angular, quatre microservices Spring Boot, une passerelle API, un serveur de découverte, un service IA FastAPI et les services d’infrastructure nécessaires à l’exécution locale. L’implémentation est organisée selon les cinq Epics du Product Backlog et les huit sprints définis au chapitre précédent.
+
+La plateforme accompagne le traitement d’un dossier d’appel d’offres : dépôt du TDR, extraction d’informations, analyse approfondie, évaluation P-Win, matching avec le référentiel interne, génération de livrables, décision managériale et audit. Les traitements longs sont exécutés de façon asynchrone et leur progression est remontée vers le frontend par Server-Sent Events (SSE).
+
+\section{Environnement technique}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Environnement technique de ProjectIQ}
+\label{tab:environnement-technique}
+\begin{tabularx}{\textwidth}{p{3cm}Y Y}
+\toprule
+\textbf{Couche} & \textbf{Technologies utilisées} & \textbf{Rôle} \\
+\midrule
+Frontend & Angular 17.0.5, TypeScript, PrimeNG 17.2.0, Chart.js & Interface web, routage, formulaires, tableaux et graphiques. \\
+Microservices métier & Java 21, Spring Boot 3.4.3 ; \texttt{analyste-service} en Spring Boot 3.2.5 & Authentification, administration, dossiers, analyse et livrables. \\
+Service IA & FastAPI 0.111.0, Pydantic 2.7.1, SDK Anthropic & Extraction, risques, matching et génération de contenus. \\
+Modèle IA & \texttt{claude-haiku-4-5-20251001} & Analyse et génération de texte. \\
+Persistance & PostgreSQL 16 Alpine & Stockage des données métier. \\
+Stockage objet & MinIO & TDR, textes extraits, documents DOCX, ZIP et rapports. \\
+Messagerie & RabbitMQ 3 Management Alpine & Communication asynchrone entre services. \\
+Découverte et gateway & Eureka et Spring Cloud Gateway & Découverte des services et point d’entrée API. \\
+Messagerie de test & Mailpit & Réception et consultation locale des courriels. \\
+Conteneurisation & Docker Compose 3.8 & Démarrage de l’environnement local. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Le frontend utilise l’API Gateway sur \texttt{http://localhost:8089}. Le service IA est situé dans le dépôt frontend, dans le dossier \texttt{ia-service}, et est appelé par les services Spring grâce à des clients Feign.
+
+\section{Module 1 -- Sécurité, administration et référentiel}
+
+\subsection{Objectif et planification}
+
+Le premier module établit le socle de sécurité et d’administration. Il couvre l’inscription, l’authentification, l’activation des comptes, la gestion des utilisateurs, des rôles, des permissions et des modules accessibles. Il inclut aussi l’audit des accès et des actions administratives.
+
+\begin{table}[H]
+\centering
+\caption{Planification de l’Epic 1}
+\begin{tabular}{lll}
+\toprule
+\textbf{Sprint} & \textbf{Objectif} & \textbf{Story Points} \\
+\midrule
+Sprint 1 & Socle de sécurité et gestion des comptes & 11 \\
+Sprint 2 & Paramétrage métier, dictionnaires et audit & 14 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Authentification et gestion des comptes}
+
+Le \texttt{auth-service} écoute sur le port 9090. Il persiste les comptes dans la table \texttt{credential\_account}, les jetons de renouvellement dans \texttt{refresh\_token} et les événements d’accès dans \texttt{access\_event}. Un compte comporte notamment un identifiant utilisateur, une adresse électronique unique, un mot de passe chiffré avec BCrypt, un état, un rôle, un compteur de tentatives échouées et des dates de création ou de dernière connexion.
+
+Les états utilisés sont \texttt{PENDING}, \texttt{VALIDATED}, \texttt{ACTIVE}, \texttt{REJECTED} et \texttt{LOCKED}. Après cinq tentatives de connexion infructueuses, le compte passe à l’état \texttt{LOCKED}. L’inscription vérifie que l’adresse électronique n’est pas déjà utilisée, que le mot de passe contient au moins huit caractères et qu’il ne contient pas le nom ou le préfixe de l’adresse électronique.
+
+L’administrateur peut valider le dossier d’inscription, activer le compte et affecter son rôle. Le service initialise également un compte administrateur au démarrage lorsqu’il est absent. Les Access Tokens sont des JWT signés avec l’algorithme HS512 ; ils contiennent l’adresse électronique et le rôle de l’utilisateur. Leur durée configurée est de 15 minutes. Le Refresh Token est généré sous forme d’UUID, mais seule son empreinte SHA-256 est stockée en base. Sa durée de validité est de sept jours et il est révoqué à la déconnexion.
+
+Le filtre JWT protège les routes privées, extrait le jeton Bearer, le valide puis ajoute l’authentification dans le contexte Spring Security. Les routes de connexion, d’inscription, de renouvellement de jeton, de récupération ou de réinitialisation de mot de passe et de santé sont publiques.
+
+Les événements \texttt{LOGIN\_SUCCESS}, \texttt{LOGIN\_FAILURE}, \texttt{LOGIN\_BLOCKED}, \texttt{LOGOUT}, \texttt{TOKEN\_REFRESH}, \texttt{CRÉATION}, \texttt{VALIDATION\_DOSSIER} et \texttt{ACTIVATION\_FINALE} sont journalisés avec l’adresse utilisée, le résultat, l’adresse IP, l’agent utilisateur et la date.
+
+\subsection{Administration, rôles et Feature Flags}
+
+Le \texttt{admin-service} écoute sur le port 9091. Les tables \texttt{app\_user}, \texttt{role}, \texttt{permission}, \texttt{user\_role}, \texttt{role\_permission}, \texttt{data\_event} et \texttt{user\_feature\_flags} constituent son référentiel principal. Les migrations sont gérées avec Flyway.
+
+Les rôles disponibles sont \texttt{ADMIN}, \texttt{ANALYST} et \texttt{MANAGER}. Les permissions sont regroupées par catégories fonctionnelles. Le service permet de modifier les permissions associées à un rôle et consigne les modifications dans \texttt{data\_event}.
+
+Les Feature Flags sont enregistrés par utilisateur et par code de module. Une contrainte d’unicité empêche de créer deux lignes pour le même couple \texttt{(user\_email, module\_code)}. Le frontend charge ces droits après la connexion afin d’adapter les fonctionnalités visibles à l’utilisateur.
+
+Le dictionnaire d’anonymisation appartient au \texttt{project-service}, et non au \texttt{admin-service}. Il contient le mot d’origine, le code de remplacement et son état d’activation.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Principales routes du module de sécurité et d’administration}
+\begin{tabularx}{\textwidth}{p{3.5cm}p{2cm}Y}
+\toprule
+\textbf{Route} & \textbf{Méthode} & \textbf{Fonction} \\
+\midrule
+\texttt{/api/auth/login} & POST & Authentification et émission des jetons. \\
+\texttt{/api/auth/register} & POST & Inscription d’un nouveau compte. \\
+\texttt{/api/auth/refresh} & POST & Renouvellement de l’Access Token. \\
+\texttt{/api/auth/validate-dossier/\{id\}} & POST & Validation d’un dossier d’inscription. \\
+\texttt{/api/auth/activate-account/\{id\}} & POST & Activation finale du compte. \\
+\texttt{/api/admin/users} & GET & Consultation des utilisateurs. \\
+\texttt{/api/admin/roles} & GET & Consultation des rôles. \\
+\texttt{/api/admin/audit/data} & GET & Consultation du journal d’audit métier. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.92\textwidth]{figures/fig5_1_login.png}
+\fbox{\parbox[c][5cm][c]{.85\textwidth}{\centering\textbf{Emplacement Figure 5.1}\\Capture de la page de connexion : e-mail, mot de passe et message d’erreur ou de succès.}}
+\caption{Interface de connexion de ProjectIQ.}
+\label{fig:login}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.92\textwidth]{figures/fig5_2_admin_users.png}
+\fbox{\parbox[c][5cm][c]{.85\textwidth}{\centering\textbf{Emplacement Figure 5.2}\\Capture de la gestion des utilisateurs : validation, activation ou rejet.}}
+\caption{Gestion administrative des comptes utilisateurs.}
+\label{fig:admin-users}
+\end{figure}
+
+\section{Module 2 -- Dépôt, extraction et validation initiale}
+
+\subsection{Objectif et planification}
+
+Ce module gère le dépôt d’un TDR, son stockage, l’extraction de son texte et l’analyse initiale par IA. Il comprend également les métadonnées d’extraction, la ré-extraction d’un champ et le paramétrage des prompts.
+
+\begin{table}[H]
+\centering
+\caption{Planification de l’Epic 2}
+\begin{tabular}{lll}
+\toprule
+\textbf{Sprint} & \textbf{Objectif} & \textbf{Story Points} \\
+\midrule
+Sprint 3 & Intégration IA, upload MinIO et extraction P1 & 14 \\
+Sprint 4 & Analyse sémantique approfondie et Prompt Override & 13 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Gestion du dossier et stockage}
+
+Le \texttt{project-service}, exposé sur le port 8083, gère l’entité \texttt{Dossier}. Elle contient les informations P1, des données internes, des valeurs calculées, l’état du workflow, l’auteur du dépôt, le caractère privé et les chemins des fichiers produits.
+
+Lors du dépôt, le TDR est enregistré dans le bucket MinIO des documents originaux. Son texte est extrait puis sauvegardé dans un bucket de texte. La taille maximale des fichiers téléversés est fixée à 100 Mo.
+
+Les douze informations prévues en phase 1 sont : pays, intitulé de l’offre, client, bailleurs, budget global, hommes-mois, date limite de soumission, langue, obligation et date de visite, obligation et date de conférence. Les métadonnées conservent la valeur proposée par l’IA, la valeur finale, la confiance, la source textuelle, l’origine de la valeur, l’indicateur de correction humaine et le nombre de ré-extractions.
+
+Le TJM implicite est calculé lorsque le budget et le nombre d’hommes-mois sont exploitables selon la formule : \textit{budget / (hommes-mois $\times$ 20)}. La priorité automatique vaut 1 pour dix jours ouvrables ou moins, 2 pour vingt jours ou moins, et 3 au-delà. Elle peut être remplacée manuellement.
+
+\subsection{Extraction P1, ré-extraction et indexation}
+
+Le lancement de l’analyse appelle l’endpoint IA de phase 1. Les résultats sont enregistrés dans les métadonnées avec les alertes et les informations de coût retournées par le service IA. Dans le code actuel, l’entité \texttt{Dossier} est alimentée directement avec \texttt{PAYS}, \texttt{INTITULE\_OFFRE}, \texttt{CLIENT}, \texttt{HOMMES\_MOIS} et \texttt{DT\_LIM\_SOUM}. Les autres valeurs P1 restent consultables dans les métadonnées d’extraction.
+
+Un champ peut être ré-extrait par \texttt{PUT /api/dossiers/\{id\}/reextract-field}. Deux ré-extractions au maximum sont autorisées par champ. La validation P1 enregistre les corrections humaines et positionne le dossier à l’état \texttt{INDEXED}. Dans l’implémentation actuelle, l’absence des champs pays, budget ou hommes-mois produit un avertissement dans les journaux mais ne bloque pas l’indexation.
+
+Après indexation, le \texttt{project-service} publie l’événement RabbitMQ \texttt{DOSSIER\_INDEXED}, consommé par l’\texttt{analyste-service} pour lancer le traitement approfondi.
+
+\subsection{Protection des dossiers privés et prompts}
+
+Pour un dossier privé, le service applique l’encapsulation DLP avant l’envoi du texte à l’IA. Les mots actifs du dictionnaire sont remplacés sans remplacement partiel grâce à des expressions régulières utilisant les limites de mots. Les codes ont la forme \texttt{***CODE\_xxxxxxxx***}, sont régénérés quotidiennement et peuvent être décapsulés après le retour de l’IA.
+
+Le service IA expose la consultation et la mise à jour des prompts sous \texttt{/config/prompts}. Le \texttt{project-service} propose des overrides propres à un dossier. Le client Anthropic est créé une seule fois. Les appels utilisent Claude Haiku 4.5, avec au plus deux nouvelles tentatives après échec et un délai progressif. Le Prompt Caching éphémère est appliqué au prompt système et au document. Les métriques retournées comprennent les tokens, le temps de traitement, le coût estimé et les données de cache.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Principales routes du module de dépôt et d’extraction}
+\begin{tabularx}{\textwidth}{p{4.5cm}p{1.5cm}Y}
+\toprule
+\textbf{Route} & \textbf{Méthode} & \textbf{Fonction} \\
+\midrule
+\texttt{/api/dossiers/upload} & POST & Dépôt du TDR et création du dossier. \\
+\texttt{/api/dossiers/\{id\}/analyze} & POST & Lancement de l’analyse P1. \\
+\texttt{/api/dossiers/\{id\}/extraction-p1} & GET & Consultation des résultats P1. \\
+\texttt{/api/dossiers/\{id\}/validate-p1} & PUT & Validation ou correction de la phase 1. \\
+\texttt{/api/dossiers/\{id\}/reextract-field} & PUT & Ré-extraction ciblée d’un champ. \\
+\texttt{/api/dossiers/config-ia/prompts} & GET & Consultation des prompts. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.92\textwidth]{figures/fig5_3_upload.png}
+\fbox{\parbox[c][5cm][c]{.85\textwidth}{\centering\textbf{Emplacement Figure 5.3}\\Capture du dépôt : fichier TDR, date limite et option « dossier privé ».}}
+\caption{Dépôt d’un dossier d’appel d’offres.}
+\label{fig:upload}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.92\textwidth]{figures/fig5_4_extraction_p1.png}
+\fbox{\parbox[c][5cm][c]{.85\textwidth}{\centering\textbf{Emplacement Figure 5.4}\\Capture des résultats P1 : valeur, confiance, source et action de correction.}}
+\caption{Résultats de l’extraction initiale et validation humaine.}
+\label{fig:extraction-p1}
+\end{figure}
+
+\section{Module 3 -- Évaluation, matching et livrables}
+
+\subsection{Objectif et planification}
+
+Le \texttt{analyste-service} réalise l’extraction P2, l’analyse des risques, le calcul P-Win, le matching avec le référentiel et la génération documentaire. Il écoute sur le port interne 8080 et est exposé par Docker sur le port 8085.
+
+\begin{table}[H]
+\centering
+\caption{Planification de l’Epic 3}
+\begin{tabular}{lll}
+\toprule
+\textbf{Sprint} & \textbf{Objectif} & \textbf{Story Points} \\
+\midrule
+Sprint 5 & Scoring P-Win et matching & 13 \\
+Sprint 6 & Génération APO, méthodologie et pack & 14 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Pipeline asynchrone}
+
+L’événement \texttt{DOSSIER\_INDEXED} déclenche \texttt{AnalyseDeepService} de façon asynchrone. Le service charge le dossier et le texte du document, réalise l’extraction P2, évalue les risques et diffuse vers le frontend les événements SSE \texttt{PIPELINE\_START}, \texttt{DATA\_LOADED}, \texttt{PHASE2\_COMPLETED}, \texttt{RISKS\_COMPLETED}, \texttt{PWIN\_COMPLETED}, \texttt{MATCHING\_COMPLETED}, \texttt{PIPELINE\_PAUSED\_FOR\_VALIDATION}, \texttt{PIPELINE\_STOPPED\_NOGO} ou \texttt{PIPELINE\_ERROR}.
+
+L’extraction P2 remplit notamment le mode de notation, la note minimale, la date limite des questions, le délai global, les informations de financement local, les données de caution, l’exigence de banque locale, les pondérations technique et financière ainsi que la date limite de soumission. Elle calcule également une indication sur la suffisance du délai de préparation.
+
+Les dix risques portent sur le pays et la sécurité, les finances, les pénalités, les exigences du TDR, les garanties et assurances, la taille et la dispersion, les frais divers, le budget et les hommes-mois, la participation locale et la fiscalité. Chaque risque possède un niveau et une justification. Les résultats et les métriques d’appel IA sont enregistrés dans les journaux d’audit IA.
+
+Si la décision automatique est \texttt{NO\_GO} ou \texttt{MANUAL}, le service génère le rapport No-Go et arrête le pipeline. Dans le cas contraire, il effectue le matching, recalcule le score P-Win et attend la validation manuelle avant la génération des livrables.
+
+\subsection{Score P-Win et matching}
+
+Le score P-Win est calculé à partir de cinq axes : faisabilité, rentabilité, risques, concurrence et conformité. Les poids par défaut définis dans le chargeur de configuration sont respectivement 25\%, 25\%, 25\%, 15\% et 10\%. La décision automatique, le motif principal, les scores par axe, le risque rédhibitoire éventuel et les informations de Force-Go sont conservés avec le score.
+
+Le moteur de matching compare les exigences extraites du dossier au référentiel de compétences, de références, d’experts et de relation client. Il calcule les taux de couverture des compétences et des experts. L’IA peut extraire les exigences, produire une matrice de différenciation et proposer des correspondances d’experts.
+
+\subsection{Génération des livrables}
+
+Après validation, le service peut générer les contenus APO, la méthodologie, la checklist, le rapport général et un pack ZIP. Les DOCX sont produits à partir de modèles présents dans les ressources du service et remplis avec Apache POI. Les livrables sont déposés dans MinIO et leurs chemins sont associés au dossier.
+
+Le rapport No-Go s’appuie sur un modèle DOCX et un contenu narratif demandé au service IA. Il reprend le score, les risques, le contexte du dossier et la décision proposée. Le pack regroupe les documents générés et les fichiers d’accompagnement disponibles au moment de sa création.
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.92\textwidth]{figures/fig5_5_pipeline_sse.png}
+\fbox{\parbox[c][5cm][c]{.85\textwidth}{\centering\textbf{Emplacement Figure 5.5}\\Capture du suivi d’analyse : étapes SSE et progression du pipeline.}}
+\caption{Suivi en temps réel du pipeline d’analyse.}
+\label{fig:pipeline-sse}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.92\textwidth]{figures/fig5_6_pwin.png}
+\fbox{\parbox[c][5cm][c]{.85\textwidth}{\centering\textbf{Emplacement Figure 5.6}\\Capture du score P-Win : score global, axes et risques.}}
+\caption{Évaluation P-Win et analyse des risques.}
+\label{fig:pwin}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.92\textwidth]{figures/fig5_7_matching.png}
+\fbox{\parbox[c][5cm][c]{.85\textwidth}{\centering\textbf{Emplacement Figure 5.7}\\Capture du matching : taux de couverture et matrice de différenciation.}}
+\caption{Matching du dossier avec le référentiel interne.}
+\label{fig:matching}
+\end{figure}
+
+\section{Module 4 -- Supervision et arbitrage managérial}
+
+\subsection{Objectif et planification}
+
+Ce module fournit au manager une vue transverse des dossiers, des décisions et des validations. Il comprend le tableau de bord, la consultation de l’historique, l’arbitrage No-Go/Force-Go, les validations hiérarchiques et les accès aux rapports produits.
+
+\begin{table}[H]
+\centering
+\caption{Planification de l’Epic 4}
+\begin{tabular}{lll}
+\toprule
+\textbf{Sprint} & \textbf{Objectif} & \textbf{Story Points} \\
+\midrule
+Sprint 7 & Dashboard manager, arbitrage et historiques & 15 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Tableau de bord, arbitrage et validation}
+
+Le composant \texttt{ManagerDashboardComponent} rafraîchit ses données toutes les trente secondes. Il affiche le total des dossiers, les dossiers actifs, les dossiers en attente, les No-Go critiques et les dossiers archivés. Il présente aussi un graphique de répartition et une liste de dossiers prioritaires.
+
+Le manager peut valider une décision No-Go avec \texttt{VALIDATE\_NOGO} ou déclencher un \texttt{FORCE\_GO}. Le forçage exige une justification d’au moins cinquante mots. Le type de forçage, le nom du manager, la justification et la date sont conservés dans le modèle de score et dans la piste d’audit.
+
+Le module de validation gère des validateurs identifiés par les rôles DO, DDA, DGA et PDG. Les statuts manipulés sont \texttt{PENDING}, \texttt{APPROVED} et \texttt{REJECTED}. Des jetons de validation sont gérés côté \texttt{project-service}, avec contrôle périodique des expirations. Les notifications utilisent la messagerie configurée avec Mailpit en environnement local.
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.92\textwidth]{figures/fig5_8_manager_dashboard.png}
+\fbox{\parbox[c][5cm][c]{.85\textwidth}{\centering\textbf{Emplacement Figure 5.8}\\Capture du dashboard manager : indicateurs, graphique et dossiers prioritaires.}}
+\caption{Tableau de bord de supervision managériale.}
+\label{fig:manager-dashboard}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.92\textwidth]{figures/fig5_9_force_go.png}
+\fbox{\parbox[c][5cm][c]{.85\textwidth}{\centering\textbf{Emplacement Figure 5.9}\\Capture de la fenêtre Force-Go : justification, type de forçage et validation.}}
+\caption{Arbitrage managérial d’une décision No-Go.}
+\label{fig:force-go}
+\end{figure}
+
+\section{Module 5 -- Audit, tests et déploiement}
+
+\subsection{Objectif et planification}
+
+Le dernier module concerne l’audit final, l’archivage, les tests E2E disponibles dans le frontend et le démarrage de l’environnement avec Docker Compose.
+
+\begin{table}[H]
+\centering
+\caption{Planification de l’Epic 5}
+\begin{tabular}{lll}
+\toprule
+\textbf{Sprint} & \textbf{Objectif} & \textbf{Story Points} \\
+\midrule
+Sprint 8 & Tests E2E, recette fonctionnelle et déploiement & 13 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Rapport d’audit et archivage}
+
+\texttt{AuditGenerationService} génère un rapport d’audit DOCX à partir du modèle \texttt{Rapport-Audit-Template.docx}. Il récupère le dossier, la piste d’audit et le score P-Win. Le document contient les informations du dossier, la décision, le détail des cinq axes, le risque rédhibitoire éventuel, les corrections humaines et les données de Force-Go.
+
+La chronologie des actions est injectée dans le tableau du modèle. Une analyse narrative et des points d’amélioration sont demandés au service IA ; si cet appel échoue, le document est tout de même généré avec la mention « Non disponible ». Le rapport est stocké dans le bucket MinIO \texttt{rapports-audit}. Après publication de l’événement \texttt{AUDIT\_GENERATED}, le \texttt{project-service} enregistre le chemin et archive le dossier.
+
+\subsection{Déploiement Docker Compose}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Services exposés par Docker Compose}
+\begin{tabularx}{\textwidth}{p{3.4cm}p{2.5cm}Y}
+\toprule
+\textbf{Service} & \textbf{Port hôte} & \textbf{Fonction} \\
+\midrule
+\texttt{discovery-server} & 8761 & Eureka. \\
+\texttt{project-service} & 8083 & Dossiers, stockage, extraction P1 et validation. \\
+\texttt{analyste-service} & 8085 & Analyse approfondie et livrables. \\
+\texttt{api-gateway} & 8089 & Point d’entrée API. \\
+\texttt{ia-service} & 8000 & Service FastAPI. \\
+\texttt{postgres} & \texttt{POSTGRES\_PORT} vers 5432 & Persistance PostgreSQL. \\
+\texttt{rabbitmq} & 5672 et 15672 & Messagerie et interface de gestion. \\
+\texttt{minio} & 9000 et 9001 & Stockage objet et console. \\
+\texttt{mailpit} & 1025 et 8025 & SMTP de test et interface de consultation. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Les services sont connectés au réseau Docker \texttt{projectiq-network}. Les services \texttt{auth-service} et \texttt{admin-service} sont démarrés dans ce réseau mais ne publient pas de port hôte dans le fichier Compose actuel. Ils restent atteignables par la Gateway grâce à Eureka. Les routes principales couvrent l’authentification, l’administration, les dossiers, les analyses, le scoring, le matching, l’export et le référentiel.
+
+Le frontend contient une configuration Cypress et un scénario E2E dédié au flux manager. Le mémoire peut présenter l’existence de ces tests, sans annoncer de taux de couverture ou de recette complète sans résultats exécutés et archivés.
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.92\textwidth]{figures/fig5_10_audit.png}
+\fbox{\parbox[c][5cm][c]{.85\textwidth}{\centering\textbf{Emplacement Figure 5.10}\\Capture du rapport ou de la piste d’audit : chronologie, score et décision finale.}}
+\caption{Traçabilité et rapport d’audit d’un dossier.}
+\label{fig:audit}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+% \includegraphics[width=.92\textwidth]{figures/fig5_11_infrastructure.png}
+\fbox{\parbox[c][5cm][c]{.85\textwidth}{\centering\textbf{Emplacement Figure 5.11}\\Une seule capture : tableau Eureka, console RabbitMQ ou console MinIO.}}
+\caption{Vue de l’infrastructure de déploiement de ProjectIQ.}
+\label{fig:infrastructure}
+\end{figure}
+
+\section{Conclusion}
+
+L’implémentation de ProjectIQ repose sur une architecture distribuée adaptée au traitement progressif des appels d’offres. Elle associe une interface Angular, des services Spring Boot spécialisés, un service IA FastAPI, une messagerie asynchrone et un stockage objet. Le système met l’accent sur la traçabilité : accès, modifications administratives, corrections de champs, décisions, appels IA et génération documentaire sont conservés pour soutenir l’analyse et la supervision managériale.
+
+Cette version décrit exclusivement les fonctionnalités visibles dans les dépôts du projet. Les valeurs de configuration, les ports et les règles métier sont présentés conformément au code actuel, sans ajouter de comportement non implémenté.

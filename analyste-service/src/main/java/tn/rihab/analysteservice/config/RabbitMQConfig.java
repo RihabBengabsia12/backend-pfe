@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Configuration;
  * pour garantir l'idempotence et éviter les pertes de messages au démarrage.
  */
 @Configuration
+@org.springframework.amqp.rabbit.annotation.EnableRabbit
 public class RabbitMQConfig {
 
     // ── Exchanges ────────────────────────────────────────────────────────────

@@ -49,10 +49,23 @@ public class ValidationToken {
     @Column(length = 1000)
     private String commentaire;
 
+    @Column(name = "decision_source", length = 20)
+    private String decisionSource;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    /** Actions autorisées par ce lien : APPROVED,REJECTED ou APPROVE_NOGO,FORCE_GO. */
+    // Nullable pour permettre à Hibernate d'ajouter la colonne sur une base déjà existante.
+    // Tous les nouveaux tokens reçoivent néanmoins une valeur lors de leur création.
+    @Column(name = "allowed_actions", length = 80)
+    private String allowedActions;
 
     /** Anti double-clic */
     @Column @Builder.Default
     private Boolean used = false;
+
+    /** Empêche deux clics simultanés d'enregistrer deux décisions. */
+    @Version
+    private Long version;
 }

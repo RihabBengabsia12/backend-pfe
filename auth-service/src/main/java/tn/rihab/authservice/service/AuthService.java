@@ -127,12 +127,21 @@ public class AuthService {
             auditService.saveAudit(account.getUserId(), account.getEmail(), "LOGIN_BLOCKED", "FAILURE", "Accès refusé", http);
             throw new AuthException("Ce compte a été refusé ou désactivé.");
         }
+        
+        if ("LOCKED".equals(account.getAccountStatus())) {
+            auditService.saveAudit(account.getUserId(), account.getEmail(), "LOGIN_BLOCKED", "FAILURE", "Compte verrouillé", http);
+            throw new AuthException("Ce compte est verrouillé suite à de trop nombreuses tentatives échouées.");
+        }
 
         if (!encoder.matches(request.getPassword(), account.getPasswordHash())) {
+            account.incrementFailedLogin();
+            accountRepo.save(account);
             auditService.saveAudit(account.getUserId(), account.getEmail(), "LOGIN_FAILURE", "FAILURE", "Password incorrect", http);
             throw new AuthException("Identifiants incorrects");
         }
 
+        account.resetFailedLogin();
+        accountRepo.save(account);
         auditService.saveAudit(account.getUserId(), account.getEmail(), "LOGIN_SUCCESS", "SUCCESS", "Connecté", http);
 
         String role = (account.getRole() == null) ? "GUEST" : account.getRole();
@@ -198,10 +207,28 @@ public class AuthService {
                 + "Cordialement,\n\n"
                 + "L'Équipe Support ProjectIQ";
 
-        // 3. Envoi via RabbitMQ
+        // 3. Envoi d'email
         sendEmail(account.getEmail(), subject, message);
 
-        // 4. Audit
+        // 4. Envoi via RabbitMQ pour synchroniser le rôle et le statut avec Admin-Service
+        try {
+            tn.rihab.authservice.DTO.UserSyncDTO syncData = new tn.rihab.authservice.DTO.UserSyncDTO(
+                    account.getUserId(),
+                    account.getEmail(),
+                    account.getEmail(), // Fallback pour fullName
+                    selectedRole
+            );
+            rabbitTemplate.convertAndSend(
+                    tn.rihab.authservice.config.RabbitMQConfig.USER_EXCHANGE,
+                    tn.rihab.authservice.config.RabbitMQConfig.USER_ROUTING_KEY,
+                    syncData
+            );
+            log.info("✅ Synchro RabbitMQ (Activation) envoyée à admin-service pour : {}", account.getEmail());
+        } catch (Exception e) {
+            log.error("❌ Erreur de synchronisation RabbitMQ (Activation) : {}", e.getMessage());
+        }
+
+        // 5. Audit
         auditService.saveAudit(account.getUserId(), account.getEmail(), "ACTIVATION_FINALE", "SUCCESS", "Profil activé", null);
     }
 
@@ -235,6 +262,17 @@ public class AuthService {
             log.error("❌ Erreur de synchronisation RabbitMQ : {}", e.getMessage());
         }
     }
+
+    public void changePassword(String email, String oldPassword, String newPassword, jakarta.servlet.http.HttpServletRequest http) {
+        CredentialAccount account = accountRepo.findByEmail(email).orElseThrow();
+        if (!encoder.matches(oldPassword, account.getPasswordHash())) {
+            throw new AuthException("L'ancien mot de passe est incorrect.");
+        }
+        account.setPasswordHash(encoder.encode(newPassword));
+        accountRepo.save(account);
+        auditService.saveAudit(account.getUserId(), account.getEmail(), "CHANGE_PASSWORD", "SUCCESS", null, null);
+    }
+
 
 
     private void sendEmail(String to, String subject, String body) {
@@ -282,7 +320,7 @@ public class AuthService {
         accountRepo.save(account);
     }
 
-    public LoginResponse refreshToken(String rawRefreshToken, HttpServletRequest http) {
+    public LoginResponse refreshToken(String rawRefreshToken, jakarta.servlet.http.HttpServletRequest http) {
         RefreshToken rt = refreshRepo.findByTokenHash(sha256(rawRefreshToken))
                 .filter(t -> t.getExpiresAt().isAfter(OffsetDateTime.now()))
                 .orElseThrow(() -> new AuthException("Token expiré"));

@@ -8,6 +8,7 @@ import tn.rihab.analysteservice.model.ScoringConfig;
 import tn.rihab.analysteservice.repository.AnalyseDossierRepository;
 import tn.rihab.analysteservice.repository.MatchingResultRepository;
 import tn.rihab.analysteservice.repository.PwinScoreRepository;
+import tn.rihab.analysteservice.repository.NoGoReportRepository;
 import tn.rihab.analysteservice.scoring.ScoringConfigService;
 import tn.rihab.analysteservice.scoring.ScoringEngine;
 import tn.rihab.analysteservice.service.AnalyseDeepService;
@@ -22,13 +23,14 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Endpoints Phase 2 — Scoring P-Win et décision Go/No-Go.
+ * Endpoints Phase 2 – Scoring P-Win et décision Go/No-Go.
  * Base URL : /api/scoring
  *
  * POST /api/scoring/{id}/calculate   Calcule le score P-Win (5 axes)
  * GET  /api/scoring/{id}/result      Retourne le P-Win calculé
  * POST /api/scoring/{id}/force-go    Force le passage Go malgré No-Go
  * POST /api/scoring/{id}/confirm-nogo Confirme le No-Go définitivement
+ * GET  /api/scoring/{id}/nogo-report Retourne le rapport No-Go s'il existe
  * GET  /api/config/scoring           Retourne la configuration des seuils
  * PUT  /api/config/scoring           Met à jour les seuils et pondérations
  */
@@ -43,8 +45,12 @@ public class ScoringController {
     private final PwinScoreRepository        pwinRepo;
     private final AnalyseDossierRepository   analyseRepo;
     private final MatchingResultRepository   matchingRepo;
+    private final NoGoReportRepository       noGoRepo;
     private final ProjectServiceClient       projectClient;
     private final tn.rihab.analysteservice.service.SystemAuditService systemAuditService;
+    private final tn.rihab.analysteservice.messaging.AnalysteEventPublisher eventPublisher; 
+    private final tn.rihab.analysteservice.service.SseService sseService;
+    private final tn.rihab.analysteservice.service.AuditGenerationService auditGenerationService;
 
     // ── POST /api/scoring/{id}/calculate ──────────────────────────────────────
 
@@ -160,7 +166,17 @@ public class ScoringController {
         pwin.setForceGoAt(LocalDateTime.now());
         pwinRepo.save(pwin);
 
-        log.warn("[Scoring] FORCE_GO — dossier {} par {} (type={} P-Win={}%)",
+        try {
+            var dossier = projectClient.getDossier(id);
+            var analyse = analyseRepo.findByDossierId(id).orElse(null);
+            if (analyse != null) {
+                noGoReportService.generate(id, dossier, pwin, analyse, forcedBy);
+            }
+        } catch (Exception e) {
+            log.error("[Scoring] Failed to regenerate No-Go Report after Force Go for dossier {}", id, e);
+        }
+
+        log.warn("[Scoring] FORCE_GO pour dossier {} par {} (type={} P-Win={}%)",
                 id, forcedBy, type, pwin.getScoreGlobal());
 
         try {
@@ -195,29 +211,114 @@ public class ScoringController {
             @PathVariable UUID id,
             @RequestBody(required = false) Map<String, String> body) {
 
-        log.info("[Scoring] Confirmation No-Go — dossier {}", id);
+        log.info("[Scoring] Génération rapport No-Go draft — dossier {}", id);
 
         var dossier = projectClient.getDossier(id);
         var pwin    = pwinRepo.findByDossierId(id)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Aucun score P-Win trouvé pour ce dossier"));
+                .orElseThrow(() -> new IllegalStateException("Aucun score P-Win trouvé"));
         var analyse = analyseRepo.findByDossierId(id)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Analyse Phase 2 non trouvée pour ce dossier"));
+                .orElseThrow(() -> new IllegalStateException("Analyse non trouvée"));
 
-        // Générer le rapport No-Go DOCX
-        var rapport = noGoReportService.generate(id, dossier, pwin, analyse);
-
-        // URL de téléchargement du rapport
+        String analysteName = (body != null && body.containsKey("analysteName")) ? body.get("analysteName") : "Système";
+        var rapport = noGoReportService.generate(id, dossier, pwin, analyse, analysteName);
         String docxPath = rapport.getDocxPath();
 
+        double budget = 0;
+        try {
+            if (dossier.getBudgetGlobal() != null) {
+                budget = Double.parseDouble(dossier.getBudgetGlobal().replaceAll("[^0-9.]", ""));
+            }
+        } catch (Exception ignored) {}
+
+        Map<String, Object> targetManager = projectClient.getTargetManager(budget);
+        String targetRole = (String) targetManager.get("role");
+        Number thresholdNum = (Number) targetManager.get("threshold");
+        double threshold = thresholdNum != null ? thresholdNum.doubleValue() : 0.0;
+
+        projectClient.notifyManagerNoGo(id);
+
+        Map<String, Object> notifData = new java.util.HashMap<>();
+        notifData.put("message", "Rapport No-Go généré et envoyé au " + targetRole + " pour validation");
+        notifData.put("detail", "Seuil budgétaire applicable : > " + String.format("%,.0f", threshold) + " TND");
+        notifData.put("role", targetRole);
+        notifData.put("type", "NOGO_ROUTED");
+
+        sseService.sendEvent(id, "PIPELINE_STOPPED_NOGO", notifData);
+
         return ResponseEntity.ok(Map.of(
-                "status",       "NO_GO_CONFIRMED",
-                "dossierId",    id.toString(),
-                "pwinScore",    pwin.getScoreGlobal(),
-                "motifPrincipal", pwin.getMotifNogo() != null ? pwin.getMotifNogo() : "",
-                "rapportPath",  docxPath != null ? docxPath : "",
-                "message",      "No-Go confirmé. Rapport généré et disponible en téléchargement."
+                "status",           "SCORING",
+                "dossierId",        id.toString(),
+                "rapportPath",      docxPath != null ? docxPath : "",
+                "message",          "Rapport No-Go généré et envoyé au " + targetRole + " pour validation.",
+                "notifDetail",      "Seuil budgétaire applicable : > " + String.format("%,.0f", threshold) + " TND",
+                "targetRole",       targetRole
+        ));
+    }
+
+    @PostMapping("/api/scoring/{id}/process-decision")
+    public ResponseEntity<Void> processDecision(
+            @PathVariable("id") UUID id,
+            @RequestBody tn.rihab.analysteservice.dto.NoGoDecisionRequestDto request) {
+        log.info("[Scoring] processDecision Manager pour dossier {} : {}", id, request.getDecision());
+
+        var dossier = projectClient.getDossier(id);
+        var pwin    = pwinRepo.findByDossierId(id).orElse(null);
+        var analyse = analyseRepo.findByDossierId(id).orElse(null);
+
+        if (pwin != null && analyse != null) {
+            if ("FORCE_GO".equals(request.getDecision())) {
+                pwin.setForceGo(true);
+                pwin.setForceGoType(request.getTypeForcage());
+                pwin.setForceGoJustif(request.getJustification());
+                pwin.setForceGoBy(request.getManagerName());
+                pwin.setForceGoAt(LocalDateTime.now());
+                pwinRepo.save(pwin);
+            }
+            // Regénère le rapport final avec les éventuelles valeurs de forçage
+            noGoReportService.generate(id, dossier, pwin, analyse, request.getManagerName());
+        }
+
+        // Notifier l'analyste du résultat de la décision manager
+        Map<String, Object> notifData = new java.util.HashMap<>();
+        notifData.put("message", "Décision Manager (" + request.getDecision() + ") pour le dossier ID: " + id);
+        notifData.put("type", "MANAGER_DECISION_RECEIVED");
+        sseService.sendEvent(id, "MANAGER_DECISION", notifData);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/api/scoring/{id}/generate-audit")
+    public ResponseEntity<Void> generateAudit(@PathVariable("id") UUID id) {
+        log.info("[Scoring] generateAudit pour dossier {}", id);
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                auditGenerationService.generateAuditReport(id);
+            } catch (Exception e) {
+                log.error("[Scoring] Erreur generation rapport audit", e);
+            }
+        });
+        return ResponseEntity.ok().build();
+    }
+
+    // ── GET /api/scoring/{id}/nogo-report ───────────────────────────────────
+
+    @GetMapping("/api/scoring/{id}/nogo-report")
+    public ResponseEntity<?> getExistingNoGoReport(@PathVariable UUID id) {
+        log.info("[Scoring] Récupération du rapport No-Go existant pour dossier {}", id);
+        
+        var rapportOpt = noGoRepo.findByDossierId(id);
+        if (rapportOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        var rapport = rapportOpt.get();
+        return ResponseEntity.ok(Map.of(
+                "dossierId",        rapport.getDossierId().toString(),
+                "pwinScore",        rapport.getPwinScore() != null ? rapport.getPwinScore() : 0.0,
+                "rapportPath",      rapport.getDocxPath() != null ? rapport.getDocxPath() : "",
+                "motifsPrincipaux", rapport.getMotifsPrincipaux() != null ? rapport.getMotifsPrincipaux() : "",
+                "analyseNarrative", rapport.getAnalyseNarrative() != null ? rapport.getAnalyseNarrative() : "",
+                "timestamp",        rapport.getGeneratedAt() != null ? rapport.getGeneratedAt() : ""
         ));
     }
 

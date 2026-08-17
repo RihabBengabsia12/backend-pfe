@@ -10,4 +10,6 @@ public class NoGoReportResponseDto {
     private String analyseNarrative;
     /** JSON des 3-5 motifs principaux structurés */
     private String motifsPrincipaux;
+    
+    private java.util.Map<String, Object> stats;
 }

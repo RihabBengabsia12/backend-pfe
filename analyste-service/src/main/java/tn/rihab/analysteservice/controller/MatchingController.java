@@ -1,10 +1,19 @@
 package tn.rihab.analysteservice.controller;
 
 import tn.rihab.analysteservice.client.ProjectServiceClient;
+import tn.rihab.analysteservice.dto.ia.RequirementsResponseDto;
 import tn.rihab.analysteservice.matching.MatchingEngine;
+import tn.rihab.analysteservice.matching.matchers.CompetencesMatcher;
+import tn.rihab.analysteservice.matching.matchers.ExpertsMatcher;
+import tn.rihab.analysteservice.matching.matchers.ReferencesMatcher;
 import tn.rihab.analysteservice.messaging.AnalysteEventPublisher;
 import tn.rihab.analysteservice.model.MatchingResult;
 import tn.rihab.analysteservice.repository.MatchingResultRepository;
+import tn.rihab.analysteservice.repository.AnalyseDossierRepository;
+import tn.rihab.analysteservice.scoring.ScoringConfigService;
+import tn.rihab.analysteservice.scoring.ScoringEngine;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +42,13 @@ public class MatchingController {
     private final MatchingResultRepository matchingRepo;
     private final ProjectServiceClient     projectClient;
     private final AnalysteEventPublisher   analysteEventPublisher;
+    private final CompetencesMatcher       competencesMatcher;
+    private final ExpertsMatcher           expertsMatcher;
+    private final ReferencesMatcher        referencesMatcher;
+    private final ScoringConfigService     scoringConfigService;
+    private final ObjectMapper             objectMapper;
+    private final AnalyseDossierRepository analyseDossierRepository;
+    private final ScoringEngine            scoringEngine;
 
     // ── POST /api/matching/{id}/run ───────────────────────────────────────────
 
@@ -70,6 +86,78 @@ public class MatchingController {
                 result.getRelationClientNiveau());
 
         return ResponseEntity.ok(result);
+    }
+
+    // ── POST /api/matching/{id}/recalculate ──────────────────────────────────
+    /**
+     * Recalcule uniquement les taux (compétences, experts, références)
+     * en réutilisant les exigences DÉJÀ EXTRAITES et stockées en base.
+     * N'appelle PAS Claude — fonctionne même si le quota API est épuisé.
+     */
+    @PostMapping("/{id}/recalculate")
+    public ResponseEntity<MatchingResult> recalculateMatching(@PathVariable UUID id) {
+        log.info("[Matching] Recalcul sans IA — dossier {}", id);
+
+        MatchingResult existing = matchingRepo.findByDossierId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Matching introuvable. Lancez d'abord /run."));
+
+        var dossier = projectClient.getDossier(id);
+
+        try {
+            // 1. Réutiliser les exigences déjà extraites (stockées en JSON)
+            List<String> qualifs = objectMapper.readValue(
+                    existing.getQualifsExigees() != null ? existing.getQualifsExigees() : "[]",
+                    new TypeReference<List<String>>() {});
+
+            List<RequirementsResponseDto.ExpertRequisDto> expertsRequisList = objectMapper.readValue(
+                    existing.getExpertsRequis() != null ? existing.getExpertsRequis() : "[]",
+                    new TypeReference<List<RequirementsResponseDto.ExpertRequisDto>>() {});
+
+            // 2. Recalculer compétences avec le référentiel mis à jour
+            var competencesResult = competencesMatcher.match(qualifs);
+
+            // 3. Recalculer références
+            Double budget = null;
+            try { budget = Double.parseDouble(dossier.getBudgetGlobal()); } catch (Exception ignored) {}
+            var referencesResult = referencesMatcher.match(existing.getSecteurAo(), dossier.getPays(), budget);
+
+            // 4. Recalculer experts
+            var expertsResult = expertsMatcher.match(expertsRequisList, dossier);
+
+            // 5. Mise à jour des taux uniquement (la matrice Claude reste inchangée)
+            existing.setTauxCouvertureCompetences(competencesResult.taux());
+            existing.setCompetencesDetail(competencesResult.detailJson());
+            existing.setGapRefs(referencesResult.gapRefsJson());
+            existing.setTauxCouvertureExperts(expertsResult.tauxCouverture());
+            existing.setExpertsDetail(expertsResult.expertsDetailJson());
+
+            String alignement = competencesResult.taux() >= 0.8 ? "Oui — aligné"
+                    : competencesResult.taux() >= 0.5 ? "Partiel" : "Non aligné";
+            existing.setAlignementStrategique(alignement);
+
+            // 6. Compatibilité
+            var config = scoringConfigService.getCurrent();
+            if (config != null) {
+                boolean compatible = competencesResult.taux() >= config.getSeuilCompatCompetences()
+                        && expertsResult.tauxCouverture() >= config.getSeuilCompatExperts()
+                        && !"Non aligné".equals(alignement);
+                existing.setCompatibleMethodologie(compatible);
+            }
+
+            MatchingResult saved = matchingRepo.save(existing);
+            
+            // Recalcul en cascade du Scoring P-Win
+            var analyse = analyseDossierRepository.findByDossierId(id).orElse(null);
+            scoringEngine.calculate(dossier, analyse, saved);
+            
+            log.info("[Matching] Recalcul terminé — compétences={}% experts={}%",
+                    Math.round(competencesResult.taux() * 100), Math.round(expertsResult.tauxCouverture() * 100));
+            return ResponseEntity.ok(saved);
+
+        } catch (Exception e) {
+            log.error("[Matching] Erreur recalcul sans IA : {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     // ── GET /api/matching/{id}/result ─────────────────────────────────────────
@@ -122,6 +210,27 @@ public class MatchingController {
                 "gapQualifs",                matching.getGapQualifs() != null
                         ? matching.getGapQualifs() : "[]"
         ));
+    }
+
+    /**
+     * Enregistre les corrections humaines de la matrice sans relancer l'IA.
+     * Utilisé après l'action explicite « Révalider la matrice ».
+     */
+    @PutMapping("/{id}/matrix/update")
+    public ResponseEntity<Map<String, Object>> updateMatrix(
+            @PathVariable UUID id,
+            @RequestBody List<Map<String, Object>> matrix) {
+        MatchingResult matching = matchingRepo.findByDossierId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Matching non disponible pour le dossier : " + id));
+        try {
+            matching.setMatriceDiff(objectMapper.writeValueAsString(matrix != null ? matrix : List.of()));
+            matchingRepo.save(matching);
+            log.info("[Matching] Matrice corrigée manuellement — dossier {}, {} ligne(s)", id,
+                    matrix != null ? matrix.size() : 0);
+            return ResponseEntity.ok(Map.of("status", "SAVED", "rows", matrix != null ? matrix.size() : 0));
+        } catch (Exception e) {
+            throw new IllegalStateException("Impossible d'enregistrer la matrice de différenciation", e);
+        }
     }
 
     // ── POST /api/matching/{id}/force-compatible ──────────────────────────────

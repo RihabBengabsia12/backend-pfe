@@ -19,6 +19,10 @@ public class MinIOConfig {
     @Value("${MINIO_SECRET_KEY:minioadmin}")
     private String secretKey;
 
+    /** Adresse accessible depuis le navigateur, distincte du nom Docker interne. */
+    @Value("${MINIO_PUBLIC_ENDPOINT:http://localhost:9000}")
+    private String publicEndpoint;
+
     @Bean
     public MinioClient minioClient() {
         // Log pour confirmer le point de terminaison utilisé lors du démarrage
@@ -27,6 +31,18 @@ public class MinIOConfig {
         return MinioClient.builder()
                 .endpoint(endpoint)
                 .credentials(accessKey, secretKey)
+                .build();
+    }
+
+    @Bean("publicMinioClient")
+    public MinioClient publicMinioClient() {
+        // Le client public ne sert qu'a signer les URL destinees au navigateur.
+        // Fixer la region evite au SDK d'interroger localhost:9000 depuis le
+        // conteneur pour la decouvrir (localhost n'est pas le conteneur MinIO).
+        return MinioClient.builder()
+                .endpoint(publicEndpoint)
+                .credentials(accessKey, secretKey)
+                .region("us-east-1")
                 .build();
     }
 

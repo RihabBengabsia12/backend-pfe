@@ -39,6 +39,8 @@ public class NoGoReportService {
     private final IaServiceClient        iaClient;
     private final DocumentExportService  exportService;
     private final NoGoReportRepository   noGoRepo;
+    private final tn.rihab.analysteservice.repository.IaAuditLogRepository auditLogRepo;
+    private final tn.rihab.analysteservice.client.ProjectServiceClient projectClient;
 
     /**
      * Génère et persiste le rapport No-Go.
@@ -51,7 +53,7 @@ public class NoGoReportService {
      */
     @Transactional
     public NoGoReport generate(UUID dossierId, DossierDto dossier,
-                               PwinScore pwin, AnalyseDossier analyse) {
+                               PwinScore pwin, AnalyseDossier analyse, String analysteName) {
         log.info("[NoGoReport] Génération rapport No-Go — dossier {} (P-Win={:.1f}%)",
                 dossierId, pwin.getScoreGlobal());
 
@@ -72,8 +74,10 @@ public class NoGoReportService {
                 .motifPrincipal(pwin.getMotifNogo())
                 .build();
 
-        // Générer l'analyse narrative via Claude
+        // Appel à l'IA pour générer le rapport
         NoGoReportResponseDto response = iaClient.generateNogoReport(context);
+        
+        saveAudit(dossierId, "GENERATION_NOGO_REPORT", response.getStats());
 
         // Identifier les motifs principaux (axes les plus pénalisants)
         String motifsPrincipaux = buildMotifsPrincipaux(pwin, analyse);
@@ -90,7 +94,19 @@ public class NoGoReportService {
 
         // Exporter en DOCX et stocker sur MinIO
         try {
-            String docxPath = exportService.exportNoGoReport(saved, dossier);
+            // Le rapport enregistré reste anonymisé. Une copie décapsulée est
+            // créée uniquement pour le document final remis à l'utilisateur.
+            NoGoReport exportReport = NoGoReport.builder()
+                    .id(saved.getId())
+                    .dossierId(saved.getDossierId())
+                    .pwinScore(saved.getPwinScore())
+                    .motifsPrincipaux(decapsulate(dossierId, saved.getMotifsPrincipaux()))
+                    .analyseNarrative(decapsulate(dossierId, saved.getAnalyseNarrative()))
+                    .docxPath(saved.getDocxPath())
+                    .generatedAt(saved.getGeneratedAt())
+                    .build();
+            String docxPath = exportService.exportNoGoReport(
+                    exportReport, decapsulateDossier(dossierId, dossier), analysteName, pwin);
             saved.setDocxPath(docxPath);
             saved = noGoRepo.save(saved);
             log.info("[NoGoReport] DOCX généré : {}", docxPath);
@@ -104,6 +120,40 @@ public class NoGoReportService {
     public NoGoReport getByDossierId(UUID dossierId) {
         return noGoRepo.findByDossierId(dossierId)
                 .orElseThrow(() -> new IllegalArgumentException("Rapport No-Go non trouvé : " + dossierId));
+    }
+
+    private String decapsulate(UUID dossierId, String text) {
+        if (text == null || text.isBlank()) return text;
+        try {
+            return projectClient.decapsulate(dossierId, text);
+        } catch (Exception e) {
+            log.error("[NoGoReport] Erreur de décapsulation DLP pour le dossier {}", dossierId, e);
+            return text;
+        }
+    }
+
+    private DossierDto decapsulateDossier(UUID dossierId, DossierDto source) {
+        return DossierDto.builder()
+                .id(source.getId()).status(source.getStatus()).isPrivate(source.getIsPrivate())
+                .pays(decapsulate(dossierId, source.getPays()))
+                .intituleOffre(decapsulate(dossierId, source.getIntituleOffre()))
+                .numeroReference(decapsulate(dossierId, source.getNumeroReference()))
+                .client(decapsulate(dossierId, source.getClient()))
+                .bailleurs(decapsulate(dossierId, source.getBailleurs()))
+                .budgetGlobal(decapsulate(dossierId, source.getBudgetGlobal()))
+                .hommesMois(source.getHommesMois()).dtLimSoum(source.getDtLimSoum())
+                .langue(decapsulate(dossierId, source.getLangue()))
+                .visiteObl(source.getVisiteObl()).visiteDate(source.getVisiteDate())
+                .confObl(source.getConfObl()).confDate(source.getConfDate())
+                .arriveBo(source.getArriveBo()).transmission(source.getTransmission())
+                .tjmImplicite(source.getTjmImplicite()).joursOuvrables(source.getJoursOuvrables())
+                .priorite(source.getPriorite()).confianceP1(source.getConfianceP1())
+                .pwinScore(source.getPwinScore()).documentTextPath(source.getDocumentTextPath())
+                .apoDocxPath(source.getApoDocxPath()).methodoDocxPath(source.getMethodoDocxPath())
+                .rapportPath(source.getRapportPath()).nogoReportPath(source.getNogoReportPath())
+                .packZipPath(source.getPackZipPath()).auditReportPath(source.getAuditReportPath())
+                .createdAt(source.getCreatedAt()).updatedAt(source.getUpdatedAt())
+                .build();
     }
 
     // ── Utilitaires ────────────────────────────────────────────────────────────
@@ -159,5 +209,64 @@ public class NoGoReportService {
                     });
         }
         return sb.append("]").toString();
+    }
+
+    private String formatMotifsForDocx(String jsonMotifs) {
+        if (jsonMotifs == null || !jsonMotifs.startsWith("[")) return jsonMotifs;
+        try {
+            // Very simple JSON parsing for DOCX formatting (without importing heavy libraries just for this)
+            StringBuilder text = new StringBuilder();
+            String[] items = jsonMotifs.substring(1, jsonMotifs.length() - 1).split("\\},\\{");
+            for (String item : items) {
+                item = item.replace("{", "").replace("}", "").replace("\"", "");
+                String axe = extractJsonValue(item, "axe");
+                String champ = extractJsonValue(item, "champ");
+                String niveau = extractJsonValue(item, "niveau");
+                String score = extractJsonValue(item, "score");
+                
+                text.append("• Axe ").append(axe.replace("_", " "));
+                if (champ != null && !champ.isEmpty()) text.append(" (").append(champ).append(")");
+                text.append(" : ");
+                if (niveau != null && !niveau.isEmpty()) text.append(niveau);
+                if (score != null && !score.isEmpty()) text.append(score);
+                text.append("\n");
+            }
+            return text.toString().trim();
+        } catch (Exception e) {
+            return jsonMotifs; // Fallback to raw JSON if parsing fails
+        }
+    }
+    
+    private String extractJsonValue(String item, String key) {
+        String search = key + ":";
+        int idx = item.indexOf(search);
+        if (idx == -1) return null;
+        int end = item.indexOf(",", idx);
+        if (end == -1) end = item.length();
+        return item.substring(idx + search.length(), end);
+    }
+
+    private void saveAudit(UUID dossierId, String actionName, java.util.Map<String, Object> stats) {
+        if (stats == null) return;
+        try {
+            Integer tokenUsage = stats.get("token_usage") != null ? ((Number)stats.get("token_usage")).intValue() : null;
+            Integer inputTokens = stats.get("input_tokens") != null ? ((Number)stats.get("input_tokens")).intValue() : null;
+            Integer outputTokens = stats.get("output_tokens") != null ? ((Number)stats.get("output_tokens")).intValue() : null;
+            Integer processingTimeMs = stats.get("processing_time_ms") != null ? ((Number)stats.get("processing_time_ms")).intValue() : null;
+            Double estimatedCost = stats.get("estimated_cost") != null ? ((Number)stats.get("estimated_cost")).doubleValue() : null;
+            
+            auditLogRepo.save(tn.rihab.analysteservice.model.IaAuditLog.builder()
+                    .dossierId(dossierId)
+                    .actionName(actionName)
+                    .tokenUsage(tokenUsage)
+                    .inputTokens(inputTokens)
+                    .outputTokens(outputTokens)
+                    .processingTimeMs(processingTimeMs)
+                    .estimatedCost(estimatedCost)
+                    .rawJson("{}")
+                    .build());
+        } catch (Exception e) {
+            log.warn("Erreur de sauvegarde de l'audit pour {}", actionName, e);
+        }
     }
 }

@@ -8,19 +8,19 @@ import java.util.List;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class ApoTextsResponseDto {
 
-    /** [[RESUME_CONTEXTE_OBJECTIFS]] — 5 lignes max, factuel */
+    @com.fasterxml.jackson.annotation.JsonProperty("RESUME_CONTEXTE_OBJECTIFS")
     private String resumeContexteObjectifs;
 
-    /** [[POINTS_CRITIQUES]] — liste des alertes prioritaires */
+    @com.fasterxml.jackson.annotation.JsonProperty("POINTS_CRITIQUES")
     private String pointsCritiques;
 
-    /** [[RECOMMANDATION_GO_NOGO]] — "Go" | "No-Go" | "Go conditionnel (...)" */
+    @com.fasterxml.jackson.annotation.JsonProperty("RECOMMANDATION_GO_NOGO")
     private String recommandationGoNogo;
 
-    /** [[ARGUMENTAIRE_GO_NOGO]] — 100-200 mots structurés */
+    @com.fasterxml.jackson.annotation.JsonProperty("ARGUMENTAIRE_GO_NOGO")
     private String argumentaireGoNogo;
 
-    /** [[LISTE_CLARIFICATIONS]] — questions à poser au client */
+    @com.fasterxml.jackson.annotation.JsonProperty("LISTE_CLARIFICATIONS")
     private String listeClarifications;
 
     /** [[ANALYSE_CONCURRENCE]] — forces/faiblesses anticipées concurrents */
@@ -31,4 +31,6 @@ public class ApoTextsResponseDto {
 
     /** [[JUSTIF_DELAI_PREP]] — justification du délai de préparation */
     private String justifDelaiPrep;
+
+    private java.util.Map<String, Object> stats;
 }

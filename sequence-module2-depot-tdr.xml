@@ -1,0 +1,46 @@
+<mxfile host="app.diagrams.net" modified="2026-08-14T00:00:00.000Z" agent="Codex" version="26.0.0">
+  <diagram id="depot-tdr" name="Depot TDR et stockage">
+    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="Diagramme de séquence — Dépôt d’un TDR et création du dossier" style="text;html=1;align=center;verticalAlign=middle;fontStyle=1;fontSize=18;" vertex="1" parent="1"><mxGeometry x="300" y="20" width="900" height="30" as="geometry"/></mxCell>
+
+        <mxCell id="a1" value="&lt;&lt;actor&gt;&gt;&lt;br&gt;&lt;b&gt;Analyste&lt;/b&gt;" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=13;" vertex="1" parent="1"><mxGeometry x="50" y="75" width="50" height="80" as="geometry"/></mxCell>
+        <mxCell id="a2" value="&lt;&lt;boundary&gt;&gt;&lt;br&gt;&lt;b&gt;Angular&lt;/b&gt;&lt;br&gt;Formulaire de dépôt" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;" vertex="1" parent="1"><mxGeometry x="230" y="80" width="140" height="55" as="geometry"/></mxCell>
+        <mxCell id="a3" value="&lt;&lt;control&gt;&gt;&lt;br&gt;&lt;b&gt;DossierController&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;" vertex="1" parent="1"><mxGeometry x="500" y="80" width="150" height="55" as="geometry"/></mxCell>
+        <mxCell id="a4" value="&lt;&lt;control&gt;&gt;&lt;br&gt;&lt;b&gt;DossierService&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;" vertex="1" parent="1"><mxGeometry x="760" y="80" width="145" height="55" as="geometry"/></mxCell>
+        <mxCell id="a5" value="&lt;&lt;entity&gt;&gt;&lt;br&gt;&lt;b&gt;PostgreSQL&lt;/b&gt;" style="shape=cylinder;whiteSpace=wrap;html=1;fontSize=12;" vertex="1" parent="1"><mxGeometry x="1030" y="80" width="125" height="55" as="geometry"/></mxCell>
+        <mxCell id="a6" value="&lt;&lt;entity&gt;&gt;&lt;br&gt;&lt;b&gt;MinIO&lt;/b&gt;" style="shape=cylinder;whiteSpace=wrap;html=1;fontSize=12;" vertex="1" parent="1"><mxGeometry x="1280" y="80" width="125" height="55" as="geometry"/></mxCell>
+
+        <mxCell id="l1" style="shape=line;strokeWidth=1;dashed=1;html=1;" vertex="1" parent="1"><mxGeometry x="75" y="155" width="1" height="690" as="geometry"/></mxCell>
+        <mxCell id="l2" style="shape=line;strokeWidth=1;dashed=1;html=1;" vertex="1" parent="1"><mxGeometry x="300" y="135" width="1" height="710" as="geometry"/></mxCell>
+        <mxCell id="l3" style="shape=line;strokeWidth=1;dashed=1;html=1;" vertex="1" parent="1"><mxGeometry x="575" y="135" width="1" height="710" as="geometry"/></mxCell>
+        <mxCell id="l4" style="shape=line;strokeWidth=1;dashed=1;html=1;" vertex="1" parent="1"><mxGeometry x="832" y="135" width="1" height="710" as="geometry"/></mxCell>
+        <mxCell id="l5" style="shape=line;strokeWidth=1;dashed=1;html=1;" vertex="1" parent="1"><mxGeometry x="1092" y="135" width="1" height="710" as="geometry"/></mxCell>
+        <mxCell id="l6" style="shape=line;strokeWidth=1;dashed=1;html=1;" vertex="1" parent="1"><mxGeometry x="1342" y="135" width="1" height="710" as="geometry"/></mxCell>
+
+        <mxCell id="m1" value="Saisir : TDR, date limite, intitulé et confidentialité" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="75" y="185" as="sourcePoint"/><mxPoint x="300" y="185" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="m2" value="POST /api/dossiers/upload (multipart/form-data)" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="300" y="225" as="sourcePoint"/><mxPoint x="575" y="225" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="m3" value="validateFile(tdrFile)" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="575" y="265" as="sourcePoint"/><mxPoint x="650" y="265" as="targetPoint"/></mxGeometry></mxCell>
+
+        <mxCell id="alt1" value="alt [fichier vide, type non autorisé ou taille &gt; 100 Mo]" style="shape=umlFrame;whiteSpace=wrap;html=1;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="430" y="290" width="340" height="130" as="geometry"/></mxCell>
+        <mxCell id="m4" value="400 Bad Request : fichier invalide" style="endArrow=block;endFill=0;dashed=1;strokeWidth=2;html=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="575" y="335" as="sourcePoint"/><mxPoint x="300" y="335" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="m5" value="Afficher le message de validation" style="endArrow=block;endFill=0;dashed=1;strokeWidth=2;html=1;fontSize=11;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="300" y="375" as="sourcePoint"/><mxPoint x="75" y="375" as="targetPoint"/></mxGeometry></mxCell>
+
+        <mxCell id="alt2" value="else [fichier valide]" style="shape=umlFrame;whiteSpace=wrap;html=1;fontStyle=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="455" y="445" width="915" height="345" as="geometry"/></mxCell>
+        <mxCell id="m6" value="createDossierWithAsyncParsing(tdrFile, dateLimite, isPrivate, email, intitulé)" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="575" y="490" as="sourcePoint"/><mxPoint x="832" y="490" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="m7" value="uploadFile(bucket-originaux, tdrKey, tdrFile)" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="832" y="530" as="sourcePoint"/><mxPoint x="1342" y="530" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="m8" value="tdrPath" style="endArrow=block;endFill=0;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1342" y="560" as="sourcePoint"/><mxPoint x="832" y="560" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="m9" value="save(Dossier : statut UPLOADED, tdrPath, dateLimite, isPrivate)" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="832" y="600" as="sourcePoint"/><mxPoint x="1092" y="600" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="m10" value="dossierId" style="endArrow=block;endFill=0;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1092" y="630" as="sourcePoint"/><mxPoint x="832" y="630" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="m11" value="extractText(tdrPath) puis uploadText(bucket-texte, document_full.txt)" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="832" y="670" as="sourcePoint"/><mxPoint x="1342" y="670" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="m12" value="documentTextPath" style="endArrow=block;endFill=0;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="1342" y="700" as="sourcePoint"/><mxPoint x="832" y="700" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="m13" value="save(documentTextPath)" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="832" y="730" as="sourcePoint"/><mxPoint x="1092" y="730" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="m14" value="201 Created : Dossier (statut UPLOADED)" style="endArrow=block;endFill=0;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="832" y="770" as="sourcePoint"/><mxPoint x="575" y="770" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="m15" value="201 Created : dossier déposé" style="endArrow=block;endFill=0;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="575" y="810" as="sourcePoint"/><mxPoint x="300" y="810" as="targetPoint"/></mxGeometry></mxCell>
+        <mxCell id="m16" value="Confirmer le dépôt du dossier" style="endArrow=block;endFill=0;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="300" y="840" as="sourcePoint"/><mxPoint x="75" y="840" as="targetPoint"/></mxGeometry></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

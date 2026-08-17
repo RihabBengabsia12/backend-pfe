@@ -33,8 +33,10 @@ public class DossierService {
     private final StorageService storageService;
     private final DocumentParserService documentParserService;
     private final ExtractionService extractionService;
+    private final AnonymizationService anonymizationService;
     private final EventPublisher eventPublisher;
     private final AuditTrailService auditTrailService;
+    private final tn.rihab.projectservice.client.AnalysteServiceClient analysteServiceClient;
 
     // Dans DossierService.java
 
@@ -46,7 +48,7 @@ public class DossierService {
         String tdrKey = "tdr/" + UUID.randomUUID() + "_" + tdrFile.getOriginalFilename();
         String tdrPath = storageService.uploadFile(MinIOConfig.BUCKET_ORIGINAUX, tdrKey, tdrFile);
 
-        // 2. Création et enregistrement avec statut UPLOADED
+        // 2. Cration et enregistrement avec statut UPLOADED
         Dossier dossier = Dossier.builder()
                 .documentTdrPath(tdrPath)
                 .intituleOffre(intitule)
@@ -57,13 +59,23 @@ public class DossierService {
                 .build();
         dossier = dossierRepository.save(dossier);
 
-        // 3. Lancer le parsing de manière synchrone (maintenant ultra rapide)
+        // 3. Lancer le parsing de manire synchrone (maintenant ultra rapide)
         try {
             String tdrText = documentParserService.extractText(tdrPath);
             String textPath = storageService.uploadText(MinIOConfig.BUCKET_TEXTE, dossier.getId() + "/document_full.txt", tdrText);
             dossier.setDocumentTextPath(textPath);
+            if (Boolean.TRUE.equals(dossier.getIsPrivate())) {
+                String anonymizedText = anonymizationService.maskText(tdrText);
+                String anonymizedPath = storageService.uploadText(
+                        MinIOConfig.BUCKET_TEXTE,
+                        dossier.getId() + "/document_anonymized.txt",
+                        anonymizedText
+                );
+                dossier.setAnonymizedTextPath(anonymizedPath);
+                log.info("[DLP] Copie de travail anonymisée créée pour le dossier privé {}", dossier.getId());
+            }
             dossierRepository.save(dossier);
-            log.info("[Parsing] Extraction terminée pour : {}", dossier.getId());
+            log.info("[Parsing] Extraction termine pour : {}", dossier.getId());
         } catch (Exception e) {
             log.error("[Parsing] Erreur lors de l'extraction : {}", e.getMessage());
         }
@@ -71,13 +83,13 @@ public class DossierService {
         return dossier; // Retourne le dossier avec statut UPLOADED
     }
 
-    // (La méthode runParsingAsync a été retirée car l'extraction est maintenant assez rapide pour être synchrone)
+    // (La mthode runParsingAsync a t retire car l'extraction est maintenant assez rapide pour tre synchrone)
 
-    // 2. NOUVELLE MÉTHODE : Analyse manuelle (appelée par le bouton)
+    // 2. NOUVELLE MTHODE : Analyse manuelle (appele par le bouton)
     @Transactional
     public void launchAnalysis(UUID dossierId) {
         Dossier dossier = findById(dossierId);
-        String tdrText = storageService.downloadText(dossier.getDocumentTextPath());
+        String tdrText = getDocumentText(dossierId);
 
         // Extraction IA
         ExtractionResponseDto extraction = extractionService.extractPhase1(dossierId, tdrText);
@@ -87,20 +99,30 @@ public class DossierService {
         dossier.setTjmImplicite(extraction.getTjmImplicite());
         computePriorite(dossier);
 
-        dossier.setStatus(DossierStatus.INDEXED);
+        // Une révalidation de P1 sur un dossier déjà avancé met à jour les
+        // métadonnées sans faire régresser son workflow vers INDEXED.
+        boolean workflowAlreadyAdvanced = switch (dossier.getStatus()) {
+            case DEEP_ANALYSIS, SCORING, MANUAL_INTERVENTION, FORCE_GO, NO_GO_CONFIRMED,
+                 MATCHING, DRAFTING, REPORT_GENERATED, PACK_READY, PENDING_VALIDATION,
+                 SUBMITTED, AUDIT, ARCHIVED -> true;
+            default -> false;
+        };
+        if (!workflowAlreadyAdvanced) {
+            dossier.setStatus(DossierStatus.INDEXED);
+        }
         dossierRepository.save(dossier);
-        log.info("[Analyse] Analyse IA terminée et auto-validée pour le dossier : {}", dossierId);
+        log.info("[Analyse] Analyse IA termine et auto-valide pour le dossier : {}", dossierId);
 
-        // Publier l'événement RabbitMQ — non bloquant : si RabbitMQ est indisponible,
-        // l'analyse reste sauvegardée en BDD (statut INDEXED).
+        // Publier l'vnement RabbitMQ  non bloquant : si RabbitMQ est indisponible,
+        // l'analyse reste sauvegarde en BDD (statut INDEXED).
         try {
             eventPublisher.publishDossierIndexed(dossierId);
         } catch (Exception e) {
-            log.warn("[Analyse] Publication RabbitMQ échouée pour {} — analyse sauvegardée en BDD mais event non publié : {}", dossierId, e.getMessage());
+            log.warn("[Analyse] Publication RabbitMQ choue pour {}  analyse sauvegarde en BDD mais event non publi : {}", dossierId, e.getMessage());
         }
     }
 
-    // --- Les autres méthodes restent inchangées ---
+    // --- Les autres mthodes restent inchanges ---
     
     @Transactional
     public void updateStatus(UUID dossierId, DossierStatus status) {
@@ -112,6 +134,10 @@ public class DossierService {
     @Transactional
     public Dossier validateP1(UUID id, ValidateP1RequestDto req) {
         Dossier dossier = findById(id);
+        
+        // Sauvegarder la date de dépôt AVANT d'appliquer les champs (ne jamais écraser avec null)
+        LocalDate dtLimSoumSaved = dossier.getDtLimSoum();
+        
         req.getChamps().forEach((fieldName, champValide) -> {
             metadataRepository.findByDossierIdAndFieldName(id, fieldName)
                     .ifPresent(meta -> {
@@ -121,11 +147,31 @@ public class DossierService {
                     });
             applyField(dossier, fieldName, champValide.getValeur());
         });
+        
+        // Si la date limite n'a pas été saisie dans P1 (normal : elle vient du dépôt), on restaure
+        if (dossier.getDtLimSoum() == null && dtLimSoumSaved != null) {
+            dossier.setDtLimSoum(dtLimSoumSaved);
+        }
+        
         computePriorite(dossier);
-        assertBlockingFieldsPresent(dossier);
-        dossier.setStatus(DossierStatus.INDEXED);
+        // Plus de blocage : on log juste un avertissement si des champs critiques manquent
+        if (dossier.getPays() == null || dossier.getBudgetGlobal() == null || dossier.getHommesMois() == null) {
+            log.warn("[ValidateP1] Dossier {} : champs critiques vides (PAYS={}, BUDGET={}, HM={}) — validation non bloquante",
+                    id, dossier.getPays(), dossier.getBudgetGlobal(), dossier.getHommesMois());
+        }
+        boolean workflowAlreadyAdvanced = switch (dossier.getStatus()) {
+            case DEEP_ANALYSIS, SCORING, MANUAL_INTERVENTION, FORCE_GO, NO_GO_CONFIRMED,
+                 MATCHING, DRAFTING, REPORT_GENERATED, PACK_READY, PENDING_VALIDATION,
+                 SUBMITTED, AUDIT, ARCHIVED -> true;
+            default -> false;
+        };
+        if (!workflowAlreadyAdvanced) {
+            dossier.setStatus(DossierStatus.INDEXED);
+        }
         Dossier saved = dossierRepository.save(dossier);
-        eventPublisher.publishDossierIndexed(id);
+        if (!workflowAlreadyAdvanced) {
+            eventPublisher.publishDossierIndexed(id);
+        }
         return saved;
     }
 
@@ -151,7 +197,7 @@ public class DossierService {
             case "PAYS" -> d.setPays(valeur);
             case "INTITULE_OFFRE" -> d.setIntituleOffre(valeur);
             case "CLIENT" -> d.setClient(valeur);
-            case "HOMMES_MOIS" -> { try { d.setHommesMois(Double.parseDouble(valeur.replaceAll("[^0-9.]", ""))); } catch (Exception e) {} }
+            case "HOMMES_MOIS" -> parseHommesMois(valeur).ifPresent(d::setHommesMois);
             case "DT_LIM_SOUM" -> { try { d.setDtLimSoum(LocalDate.parse(valeur)); } catch (Exception e) {} }
         }
     }
@@ -160,7 +206,7 @@ public class DossierService {
         applyIfPresent(champs, "PAYS", d::setPays);
         applyIfPresent(champs, "INTITULE_OFFRE", d::setIntituleOffre);
         applyIfPresent(champs, "CLIENT", d::setClient);
-        applyIfPresent(champs, "HOMMES_MOIS", v -> d.setHommesMois(Double.parseDouble(v.replaceAll("[^0-9.]", ""))));
+        applyIfPresent(champs, "HOMMES_MOIS", v -> parseHommesMois(v).ifPresent(d::setHommesMois));
         applyIfPresent(champs, "DT_LIM_SOUM", v -> d.setDtLimSoum(LocalDate.parse(v)));
     }
 
@@ -169,9 +215,41 @@ public class DossierService {
         if (r != null && r.getValeur() != null) setter.accept(String.valueOf(r.getValeur()));
     }
 
+    /**
+     * Extrait une seule valeur H/M. L'ancienne logique supprimait tous les
+     * caractères non numériques et pouvait transformer une source ambiguë en
+     * 220544120. Une valeur ambiguë doit être revue dans la validation P1.
+     */
+    private java.util.Optional<Double> parseHommesMois(String rawValue) {
+        if (rawValue == null || rawValue.isBlank()) return java.util.Optional.empty();
+        String normalized = rawValue.replace(',', '.');
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("(?<![0-9.])([0-9]+(?:\\.[0-9]+)?)(?![0-9.])")
+                .matcher(normalized);
+        if (!matcher.find()) {
+            log.warn("[H/M] Valeur illisible ignorée : {}", rawValue);
+            return java.util.Optional.empty();
+        }
+        try {
+            double value = Double.parseDouble(matcher.group(1));
+            if (value <= 0 || value > 10000) {
+                log.warn("[H/M] Valeur hors plage ignorée : {} (source: {})", value, rawValue);
+                return java.util.Optional.empty();
+            }
+            if (matcher.find()) {
+                log.warn("[H/M] Plusieurs nombres détectés, premier nombre retenu : {} (source: {})", value, rawValue);
+            }
+            return java.util.Optional.of(value);
+        } catch (NumberFormatException e) {
+            return java.util.Optional.empty();
+        }
+    }
+
+    /** @deprecated Remplacé par un simple log dans validateP1 */
     private void assertBlockingFieldsPresent(Dossier d) {
-        if (d.getPays() == null || d.getBudgetGlobal() == null || d.getHommesMois() == null || d.getDtLimSoum() == null)
-            throw new IllegalStateException("Champs bloquants manquants");
+        // Blocage supprimé — la validation passe même avec des champs incomplets
+        log.debug("[assertBlockingFieldsPresent] PAYS={}, BUDGET={}, HM={}, DT={}",
+                d.getPays(), d.getBudgetGlobal(), d.getHommesMois(), d.getDtLimSoum());
     }
 
     private int countBusinessDays(LocalDate start, LocalDate end) {
@@ -185,7 +263,7 @@ public class DossierService {
     }
 
     public Dossier findById(UUID id) {
-        return dossierRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Non trouvé"));
+        return dossierRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Non trouv"));
     }
 
     public List<ExtractionMetadata> getExtractionP1(UUID dossierId) {
@@ -195,9 +273,27 @@ public class DossierService {
     public String getDocumentText(UUID dossierId) {
         Dossier dossier = findById(dossierId);
         if (dossier.getDocumentTextPath() == null) throw new IllegalStateException("Le texte du document n'est pas disponible.");
-        return storageService.downloadText(dossier.getDocumentTextPath());
-    }
 
+        if (!Boolean.TRUE.equals(dossier.getIsPrivate())) {
+            return storageService.downloadText(dossier.getDocumentTextPath());
+        }
+
+        // Compatibilité avec les dossiers privés créés avant l'ajout de la
+        // copie anonymisée persistante : la copie est produite une seule fois.
+        if (dossier.getAnonymizedTextPath() == null) {
+            String originalText = storageService.downloadText(dossier.getDocumentTextPath());
+            String anonymizedText = anonymizationService.maskText(originalText);
+            String anonymizedPath = storageService.uploadText(
+                    MinIOConfig.BUCKET_TEXTE,
+                    dossier.getId() + "/document_anonymized.txt",
+                    anonymizedText
+            );
+            dossier.setAnonymizedTextPath(anonymizedPath);
+            dossierRepository.save(dossier);
+            log.info("[DLP] Copie de travail anonymisée créée pour le dossier privé existant {}", dossierId);
+        }
+        return storageService.downloadText(dossier.getAnonymizedTextPath());
+    }
     public List<Dossier> getAll() {
         return dossierRepository.findAll();
     }
@@ -207,7 +303,65 @@ public class DossierService {
         Dossier dossier = findById(id);
         dossier.setPriorite(priorite);
         dossier.setPriorityOverride(true);
-        auditTrailService.log(id, "PRIORITY_UPDATED", "user", "Nouvelle priorité : " + priorite, dossier.getStatus());
+        auditTrailService.log(id, "PRIORITY_UPDATED", "user", "Nouvelle prioritÃ© : " + priorite, dossier.getStatus());
         return dossierRepository.save(dossier);
+    }
+
+    public List<Dossier> getPendingNoGo() {
+        return dossierRepository.findAll().stream()
+                .filter(d -> (d.getStatus() == DossierStatus.SCORING && Boolean.TRUE.equals(d.getManagerNotified())) ||
+                             d.getStatus() == DossierStatus.NO_GO_CONFIRMED)
+                .toList();
+    }
+
+    @Transactional
+    public void notifyManagerNoGo(UUID id) {
+        Dossier dossier = findById(id);
+        dossier.setManagerNotified(true);
+        dossierRepository.save(dossier);
+    }
+
+    @Transactional
+    public void processNoGoDecision(UUID id, tn.rihab.projectservice.dto.NoGoDecisionRequestDto request) {
+        Dossier dossier = findById(id);
+        if ("FORCE_GO".equals(request.getDecision())) {
+            dossier.setStatus(DossierStatus.MATCHING);
+            dossier.setManagerNotified(false);
+            auditTrailService.log(id, "FORCE_GO", request.getManagerName(), 
+                "Manager forcÃ© Go. Motif: " + request.getJustification(), DossierStatus.MATCHING);
+        } else if ("VALIDATE_NOGO".equals(request.getDecision())) {
+            dossier.setStatus(DossierStatus.NO_GO_CONFIRMED);
+            dossier.setManagerNotified(false);
+            auditTrailService.log(id, "NO_GO_VALIDATED", request.getManagerName(), 
+                "Manager a validÃ© le No-Go.", DossierStatus.NO_GO_CONFIRMED);
+        } else {
+            throw new IllegalArgumentException("DÃ©cision invalide");
+        }
+        
+        dossierRepository.save(dossier);
+
+        try {
+            analysteServiceClient.processDecision(id, request);
+        } catch (Exception e) {
+            log.error("Erreur lors de l'appel Ã  analyste-service pour processDecision", e);
+        }
+    }
+
+    @Transactional
+    public void archiveAndAudit(UUID id) {
+        Dossier dossier = findById(id);
+        if (dossier.getStatus() != DossierStatus.NO_GO_CONFIRMED) {
+            throw new IllegalStateException("Le dossier n'est pas NO_GO_CONFIRMED");
+        }
+        dossier.setStatus(DossierStatus.ARCHIVED);
+        dossierRepository.save(dossier);
+        
+        auditTrailService.log(id, "ARCHIVED", "system", "Archivage suite au No-Go", DossierStatus.ARCHIVED);
+
+        try {
+            analysteServiceClient.generateAudit(id);
+        } catch (Exception e) {
+            log.error("Erreur lors de l'appel Ã  analyste-service pour generateAudit", e);
+        }
     }
 }

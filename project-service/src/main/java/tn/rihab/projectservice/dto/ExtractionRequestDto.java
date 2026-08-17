@@ -13,6 +13,9 @@ public class ExtractionRequestDto {
     @JsonProperty("documentText")
     private String documentText;
 
+    @JsonProperty("fieldName")
+    private String fieldName;
+
     /** "P1" | "P2" | "RISKS" | "REFIELD_PAYS" etc. */
     @Builder.Default
     private String phase = "P1";

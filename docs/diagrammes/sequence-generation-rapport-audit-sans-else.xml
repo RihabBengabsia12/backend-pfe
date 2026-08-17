@@ -1,0 +1,117 @@
+﻿<mxGraphModel dx="1585" dy="865" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="title" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontStyle=1;fontSize=18;" value="Diagramme de séquence de géneration du rapport d&#39;audit" vertex="1">
+      <mxGeometry height="30" width="1040" x="230" y="15" as="geometry" />
+    </mxCell>
+    <mxCell id="manager" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;strokeWidth=2;fontSize=11;" value="Manager" vertex="1">
+      <mxGeometry height="70" width="55" x="20" y="75" as="geometry" />
+    </mxCell>
+    <mxCell id="front" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;fontSize=10;" value="Frontend Angular&#xa;ManagerValidationsComponent" vertex="1">
+      <mxGeometry height="545" width="155" x="125" y="65" as="geometry" />
+    </mxCell>
+    <mxCell id="project" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;fontSize=9;" value="project-service&#xa;ValidationController / ValidationService" vertex="1">
+      <mxGeometry height="545" width="185" x="365" y="65" as="geometry" />
+    </mxCell>
+    <mxCell id="db" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;fontSize=9;" value="PostgreSQL&#xa;dossier / audit_entries" vertex="1">
+      <mxGeometry height="545" width="145" x="630" y="65" as="geometry" />
+    </mxCell>
+    <mxCell id="analyst" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;fontSize=9;" value="analyste-service&#xa;ScoringController / AuditGenerationService" vertex="1">
+      <mxGeometry height="545" width="190" x="850" y="65" as="geometry" />
+    </mxCell>
+    <mxCell id="ia" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;fontSize=10;" value="ia-service" vertex="1">
+      <mxGeometry height="545" width="110" x="1115" y="65" as="geometry" />
+    </mxCell>
+    <mxCell id="rabbit" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;fontSize=10;" value="RabbitMQ" vertex="1">
+      <mxGeometry height="545" width="95" x="1290" y="65" as="geometry" />
+    </mxCell>
+    <mxCell id="m1" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="Cliquer sur &quot;Generer le rapport d&#39;audit&quot;">
+      <mxGeometry relative="1" y="12" as="geometry">
+        <mxPoint x="75" y="225" as="sourcePoint" />
+        <mxPoint x="202" y="225" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m2" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="POST /api/validation/{id}/generate-audit">
+      <mxGeometry relative="1" y="12" as="geometry">
+        <mxPoint x="202" y="260" as="sourcePoint" />
+        <mxPoint x="457" y="260" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m3" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="generateAuditForManager(id) : verifier le statut final">
+      <mxGeometry relative="1" y="12" as="geometry">
+        <Array as="points">
+          <mxPoint x="530" y="295" />
+          <mxPoint x="530" y="325" />
+        </Array>
+        <mxPoint x="457" y="295" as="sourcePoint" />
+        <mxPoint x="457" y="325" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m4" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="save(status = AUDIT) et audit AUDIT_REQUESTED">
+      <mxGeometry relative="1" y="12" as="geometry">
+        <mxPoint x="457" y="360" as="sourcePoint" />
+        <mxPoint x="702" y="360" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m4return" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="Dossier et piste d&#39;audit enregistres">
+      <mxGeometry relative="1" y="12" as="geometry">
+        <mxPoint x="702" y="380" as="sourcePoint" />
+        <mxPoint x="457" y="380" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m5" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="POST /api/scoring/{id}/generate-audit">
+      <mxGeometry relative="1" y="12" as="geometry">
+        <mxPoint x="457" y="415" as="sourcePoint" />
+        <mxPoint x="945" y="415" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m6" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="200 OK : lancement asynchrone accepte">
+      <mxGeometry relative="1" y="12" as="geometry">
+        <mxPoint x="945" y="435" as="sourcePoint" />
+        <mxPoint x="457" y="435" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m7" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="202 Accepted : AUDIT_GENERATING">
+      <mxGeometry relative="1" y="12" as="geometry">
+        <mxPoint x="457" y="460" as="sourcePoint" />
+        <mxPoint x="202" y="460" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m8" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="Afficher &quot;Generation en cours&quot;">
+      <mxGeometry relative="1" y="12" as="geometry">
+        <mxPoint x="202" y="485" as="sourcePoint" />
+        <mxPoint x="75" y="485" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m9" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="runAsync(generateAuditReport(id))">
+      <mxGeometry relative="1" y="12" as="geometry">
+        <Array as="points">
+          <mxPoint x="1020" y="495" />
+          <mxPoint x="1020" y="520" />
+        </Array>
+        <mxPoint x="945" y="495" as="sourcePoint" />
+        <mxPoint x="945" y="520" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m10" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="generateAuditReport(context)">
+      <mxGeometry relative="1" y="12" as="geometry">
+        <mxPoint x="945" y="545" as="sourcePoint" />
+        <mxPoint x="1170" y="545" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m11" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=9;labelBackgroundColor=#ffffff;" value="Analyse narrative (echec non bloquant)">
+      <mxGeometry relative="1" y="12" as="geometry">
+        <mxPoint x="1170" y="565" as="sourcePoint" />
+        <mxPoint x="945" y="565" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m12" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=8;labelBackgroundColor=#ffffff;" value="Generer DOCX, stocker dans MinIO, puis publier AUDIT_GENERATED">
+      <mxGeometry relative="1" y="12" as="geometry">
+        <mxPoint x="945" y="600" as="sourcePoint" />
+        <mxPoint x="1337" y="600" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+  </root>
+</mxGraphModel>
+

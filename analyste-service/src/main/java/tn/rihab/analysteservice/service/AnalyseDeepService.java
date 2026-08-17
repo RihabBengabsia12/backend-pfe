@@ -14,7 +14,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -104,22 +107,25 @@ public class AnalyseDeepService {
             sseService.sendEvent(dossierId, "PWIN_COMPLETED", pwin);
 
             // 5. Publier le résultat du scoring → project-service met à jour le statut
-            publisher.publishScoringCompleted(dossierId, pwin.getScoreGlobal(), pwin.getDecisionAuto());
+            publisher.publishScoringCompleted(dossierId, "Système Expert IA", null, pwin.getScoreGlobal(), pwin.getDecisionAuto(), null);
 
             // 6. Si NO_GO → générer rapport No-Go, publier, s'arrêter
             if ("NO_GO".equals(pwin.getDecisionAuto())
                     || "MANUAL".equals(pwin.getDecisionAuto())) {
 
                 // Génération automatique du rapport No-Go via template DOCX
-                noGoReportService.generate(dossierId, dossier, pwin, analyse);
+                noGoReportService.generate(dossierId, dossier, pwin, analyse, "Système Expert IA");
 
                 // Publier scoring.completed → project-service passe en MANUAL_INTERVENTION
                 // Le payload contient decision=NO_GO pour que project-service
                 // sache qu'il faut afficher la page No-Go/Force-Go côté Angular
                 publisher.publishScoringCompleted(
                         dossierId,
+                        "Système Expert IA",
+                        null,
                         pwin.getScoreGlobal(),
-                        pwin.getDecisionAuto()  // "NO_GO" ou "MANUAL"
+                        pwin.getDecisionAuto(),
+                        null
                 );
 
                 log.warn("[Pipeline] Dossier {} — P-Win={:.1f}% → {} — rapport No-Go généré",
@@ -140,12 +146,9 @@ public class AnalyseDeepService {
             // 8. Recalculer le P-Win avec le matching (Axe A et D sont affinés)
             pwin = scoringEngine.calculate(dossier, analyse, matching);
 
-            // 9. Phase 4 — Assemblage APO + génération des documents
-            apoAssemblyService.assembleAndGenerate(dossierId, dossier, analyse, matching, pwin);
-            sseService.sendEvent(dossierId, "APO_COMPLETED", "Génération des documents APO terminée");
-
-            log.info("[Pipeline] Phase 2-4 terminée pour dossier {}", dossierId);
-            sseService.sendEvent(dossierId, "PIPELINE_COMPLETED", "Pipeline complet terminé avec succès");
+            log.info("[Pipeline] Pipeline d'extraction terminé. En attente de validation manuelle pour dossier {}", dossierId);
+            sseService.sendEvent(dossierId, "PIPELINE_PAUSED_FOR_VALIDATION", "Extraction terminée, en attente de validation");
+            // Le pipeline s'arrête ici. La génération APO se fera via generateDeliverables après validation manuelle.
 
         } catch (Exception e) {
             log.error("[Pipeline] Erreur fatale pour dossier {} : {}", dossierId, e.getMessage(), e);
@@ -171,10 +174,10 @@ public class AnalyseDeepService {
             // Recalcul du score P-Win
             PwinScore pwin = scoringEngine.calculate(dossier, analyse, null);
             sseService.sendEvent(dossierId, "PWIN_COMPLETED", pwin);
-            publisher.publishScoringCompleted(dossierId, pwin.getScoreGlobal(), pwin.getDecisionAuto());
+            publisher.publishScoringCompleted(dossierId, "Système Expert IA", null, pwin.getScoreGlobal(), pwin.getDecisionAuto(), null);
 
             if ("NO_GO".equals(pwin.getDecisionAuto()) || "MANUAL".equals(pwin.getDecisionAuto())) {
-                noGoReportService.generate(dossierId, dossier, pwin, analyse);
+                noGoReportService.generate(dossierId, dossier, pwin, analyse, "Système Expert IA");
                 sseService.sendEvent(dossierId, "PIPELINE_STOPPED_NOGO", pwin.getDecisionAuto());
                 return;
             }
@@ -188,10 +191,8 @@ public class AnalyseDeepService {
 
             pwin = scoringEngine.calculate(dossier, analyse, matching);
 
-            // Régénération APO
-            apoAssemblyService.assembleAndGenerate(dossierId, dossier, analyse, matching, pwin);
-            sseService.sendEvent(dossierId, "APO_COMPLETED", "Génération des documents APO terminée");
-            sseService.sendEvent(dossierId, "RECALCUL_COMPLETED", "Recalcul complet terminé avec succès");
+            log.info("[Pipeline] Recalcul Phase 2-3 terminé pour dossier {}. En attente de génération.", dossierId);
+            sseService.sendEvent(dossierId, "RECALCUL_COMPLETED", "Recalcul complet terminé avec succès. Prêt pour génération.");
 
         } catch (Exception e) {
             log.error("[Pipeline] Erreur fatale lors du recalcul pour dossier {} : {}", dossierId, e.getMessage(), e);
@@ -205,16 +206,9 @@ public class AnalyseDeepService {
     public AnalyseDossier extractPhase2(UUID dossierId, String documentText) {
         log.info("[AnalyseDeep] Extraction Phase 2 — dossier {}", dossierId);
 
-        DossierDto dossier = projectClient.getDossier(dossierId);
-        String textToSend = documentText;
-        if (Boolean.TRUE.equals(dossier.getIsPrivate())) {
-            log.info("[Anonymization] Application du masque DLP sur le texte P2");
-            textToSend = projectClient.maskText(documentText);
-        }
-
         ExtractionRequestDto req = ExtractionRequestDto.builder()
                 .dossierId(dossierId)
-                .documentText(textToSend)
+                .documentText(documentText)
                 .phase("P2")
                 .build();
 
@@ -222,45 +216,47 @@ public class AnalyseDeepService {
 
         // Sauvegarder l'audit
         if (resp.getToken_usage() != null) {
+            String rawJsonStr = "{}";
+            try {
+                rawJsonStr = new ObjectMapper().writeValueAsString(resp);
+            } catch (Exception e) {
+                log.warn("Impossible de sérialiser la réponse Phase 2 en JSON", e);
+            }
             auditLogRepo.save(IaAuditLog.builder()
                     .dossierId(dossierId)
                     .actionName("EXTRACTION_PHASE_2")
                     .tokenUsage(resp.getToken_usage())
+                    .inputTokens(resp.getInput_tokens())
+                    .outputTokens(resp.getOutput_tokens())
                     .processingTimeMs(resp.getProcessing_time_ms())
                     .estimatedCost(resp.getEstimated_cost())
                     .cacheCreationTokens(resp.getCache_creation_tokens())
                     .cacheReadTokens(resp.getCache_read_tokens())
+                    .rawJson(rawJsonStr)
                     .build());
         }
 
         AnalyseDossier analyse = analyseRepo.findByDossierId(dossierId)
                 .orElse(AnalyseDossier.builder().dossierId(dossierId).build());
 
+        // Gérer les alertes IA (Document Partiel, etc.)
+        StringBuilder alertesBuilder = new StringBuilder();
+        if (resp.getAlertesBloquantes() != null && !resp.getAlertesBloquantes().isEmpty()) {
+            alertesBuilder.append(String.join("\n", resp.getAlertesBloquantes())).append("\n");
+        }
+        if (resp.getAlertes() != null && !resp.getAlertes().isEmpty()) {
+            alertesBuilder.append(String.join("\n", resp.getAlertes()));
+        }
+        if (alertesBuilder.length() > 0) {
+            analyse.setAlertesIa(alertesBuilder.toString().trim());
+        } else {
+            analyse.setAlertesIa(null);
+        }
+
         // Appliquer les champs extraits
         Map<String, ChampResultDto> champs = resp.getChamps();
         
-        if (Boolean.TRUE.equals(dossier.getIsPrivate()) && champs != null) {
-            // Unmask logic
-            java.util.Map<String, String> valuesToUnmask = new java.util.HashMap<>();
-            champs.forEach((k, v) -> {
-                if (v.getValeur() != null) {
-                    valuesToUnmask.put(k + "_val", v.getValeur());
-                }
-                if (v.getSource() != null) {
-                    valuesToUnmask.put(k + "_src", v.getSource());
-                }
-            });
-            java.util.Map<String, String> unmasked = projectClient.unmaskMap(valuesToUnmask);
-            champs.forEach((k, v) -> {
-                if (unmasked.containsKey(k + "_val")) {
-                    v.setValeur(unmasked.get(k + "_val"));
-                }
-                if (unmasked.containsKey(k + "_src")) {
-                    v.setSource(unmasked.get(k + "_src"));
-                }
-            });
-        }
-
+        applyIfPresent(champs, "MODE_NOTATION",           v -> analyse.setModeNotation(v));
         applyIfPresent(champs, "NOTE_MINIMALE",           v -> analyse.setNoteMinimale(v));
         applyIfPresent(champs, "DATE_LIMITE_QUESTIONS",   v -> { try { analyse.setDateLimiteQuestions(java.time.LocalDate.parse(v)); } catch (Exception ig) {} });
         applyIfPresent(champs, "DELAI_GLOBAL_MOIS",       v -> { try { analyse.setDelaiGlobalMois(Integer.parseInt(v.replaceAll("[^0-9]", ""))); } catch (Exception ig) {} });
@@ -298,15 +294,9 @@ public class AnalyseDeepService {
                                        String documentText) {
         log.info("[AnalyseDeep] Extraction risques — dossier {}", dossierId);
 
-        DossierDto dossier = projectClient.getDossier(dossierId);
-        String textToSend = documentText;
-        if (Boolean.TRUE.equals(dossier.getIsPrivate())) {
-            textToSend = projectClient.maskText(documentText);
-        }
-
         ExtractionRequestDto req = ExtractionRequestDto.builder()
                 .dossierId(dossierId)
-                .documentText(textToSend)
+                .documentText(documentText)
                 .phase("RISKS")
                 .build();
 
@@ -314,57 +304,90 @@ public class AnalyseDeepService {
         
         // Sauvegarder l'audit
         if (resp.getToken_usage() != null) {
+            String rawJsonStr = "{}";
+            try {
+                rawJsonStr = new ObjectMapper().writeValueAsString(resp);
+            } catch (Exception e) {
+                log.warn("Impossible de sérialiser la réponse Risques en JSON", e);
+            }
             auditLogRepo.save(IaAuditLog.builder()
                     .dossierId(dossierId)
                     .actionName("ANALYSE_RISQUES")
                     .tokenUsage(resp.getToken_usage())
+                    .inputTokens(resp.getInput_tokens())
+                    .outputTokens(resp.getOutput_tokens())
                     .processingTimeMs(resp.getProcessing_time_ms())
                     .estimatedCost(resp.getEstimated_cost())
                     .cacheCreationTokens(resp.getCache_creation_tokens())
                     .cacheReadTokens(resp.getCache_read_tokens())
+                    .rawJson(rawJsonStr)
                     .build());
         }
         
         Map<String, RiskItemDto> risques = resp.getRisques();
         
-        if (Boolean.TRUE.equals(dossier.getIsPrivate()) && risques != null) {
-            java.util.Map<String, String> valuesToUnmask = new java.util.HashMap<>();
-            risques.forEach((k, v) -> {
-                if (v.getJustification() != null) {
-                    valuesToUnmask.put(k, v.getJustification());
-                }
-            });
-            java.util.Map<String, String> unmasked = projectClient.unmaskMap(valuesToUnmask);
-            risques.forEach((k, v) -> {
-                if (unmasked.containsKey(k)) {
-                    v.setJustification(unmasked.get(k));
-                }
-            });
-        }
-
         // Stocker chaque risque au format "NIVEAU||justification"
-        if (risques.containsKey("RISQUE_PAYS_SECURITE"))
-            analyse.setRisquePaysSecurite(formatRisque(risques.get("RISQUE_PAYS_SECURITE")));
-        if (risques.containsKey("RISQUES_FINANCIERS"))
-            analyse.setRisquesFinanciers(formatRisque(risques.get("RISQUES_FINANCIERS")));
-        if (risques.containsKey("PENALITES"))
-            analyse.setPenalites(formatRisque(risques.get("PENALITES")));
-        if (risques.containsKey("EXIGENCES_TDR_INACCEPTABLES"))
-            analyse.setExigencesTdrInacceptables(formatRisque(risques.get("EXIGENCES_TDR_INACCEPTABLES")));
-        if (risques.containsKey("GARANTIES_ASSURANCES_ELEVEES"))
-            analyse.setGarantiesAssurancesElevees(formatRisque(risques.get("GARANTIES_ASSURANCES_ELEVEES")));
-        if (risques.containsKey("TAILLE_DISPERSION"))
-            analyse.setTailleDispersion(formatRisque(risques.get("TAILLE_DISPERSION")));
-        if (risques.containsKey("FRAIS_DIVERS_ELEVES"))
-            analyse.setFraisDiversEleves(formatRisque(risques.get("FRAIS_DIVERS_ELEVES")));
-        if (risques.containsKey("BUDGET_FAIBLE_HM_LIMITES"))
-            analyse.setBudgetFaibleHmLimites(formatRisque(risques.get("BUDGET_FAIBLE_HM_LIMITES")));
-        if (risques.containsKey("PARTICIPATION_LOCALE_EXCESSIVE"))
-            analyse.setParticipationLocaleExcessive(formatRisque(risques.get("PARTICIPATION_LOCALE_EXCESSIVE")));
-        if (risques.containsKey("FISCALITE_NON_MAITRISEE"))
-            analyse.setFiscaliteNonMaitrisee(formatRisque(risques.get("FISCALITE_NON_MAITRISEE")));
+        if (risques.containsKey("risque_pays_securite"))
+            analyse.setRisquePaysSecurite(formatRisque(risques.get("risque_pays_securite")));
+        if (risques.containsKey("risques_financiers"))
+            analyse.setRisquesFinanciers(formatRisque(risques.get("risques_financiers")));
+        if (risques.containsKey("penalites"))
+            analyse.setPenalites(formatRisque(risques.get("penalites")));
+        if (risques.containsKey("exigences_tdr_inacceptables"))
+            analyse.setExigencesTdrInacceptables(formatRisque(risques.get("exigences_tdr_inacceptables")));
+        if (risques.containsKey("garanties_assurances_elevees"))
+            analyse.setGarantiesAssurancesElevees(formatRisque(risques.get("garanties_assurances_elevees")));
+        if (risques.containsKey("taille_dispersion"))
+            analyse.setTailleDispersion(formatRisque(risques.get("taille_dispersion")));
+        if (risques.containsKey("frais_divers_eleves"))
+            analyse.setFraisDiversEleves(formatRisque(risques.get("frais_divers_eleves")));
+        if (risques.containsKey("budget_faible_hm_limites"))
+            analyse.setBudgetFaibleHmLimites(formatRisque(risques.get("budget_faible_hm_limites")));
+        if (risques.containsKey("participation_locale_excessive"))
+            analyse.setParticipationLocaleExcessive(formatRisque(risques.get("participation_locale_excessive")));
+        if (risques.containsKey("fiscalite_non_maitrisee"))
+            analyse.setFiscaliteNonMaitrisee(formatRisque(risques.get("fiscalite_non_maitrisee")));
 
         return analyseRepo.save(analyse);
+    }
+
+    // ── Phase 4 : Génération des livrables ────────────────────────────────────
+
+    /**
+     * Phase 4 : Génération des livrables (APO, Méthodologie, Audit, etc.)
+     * Déclenchée manuellement après validation par l'analyste.
+     */
+    @Async
+    public void generateDeliverables(UUID dossierId) {
+        log.info("[Pipeline] Démarrage de la génération des livrables pour le dossier {}", dossierId);
+        try {
+            sseService.sendEvent(dossierId, "GENERATION_START", "Démarrage de la génération documentaire");
+
+            DossierDto dossier = projectClient.getDossier(dossierId);
+            String documentText = projectClient.getDocumentText(dossierId);
+            AnalyseDossier analyse = getAnalyse(dossierId);
+
+            PwinScore pwin = scoringEngine.calculate(dossier, analyse, null);
+            MatchingResult matching = matchingEngine.runMatching(dossier, documentText);
+            pwin = scoringEngine.calculate(dossier, analyse, matching);
+
+            if ("NO_GO".equals(pwin.getDecisionAuto()) || "MANUAL".equals(pwin.getDecisionAuto())) {
+                log.warn("[Pipeline] Génération impossible (NO_GO) pour le dossier {}", dossierId);
+                sseService.sendEvent(dossierId, "PIPELINE_ERROR", "Dossier en NO_GO, génération impossible");
+                return;
+            }
+
+            // Génération APO et Méthodologie
+            apoAssemblyService.assembleAndGenerate(dossierId, dossier, analyse, matching, pwin);
+            sseService.sendEvent(dossierId, "APO_COMPLETED", "Génération des documents APO terminée");
+
+            log.info("[Pipeline] Pipeline complet terminé avec succès pour le dossier {}", dossierId);
+            sseService.sendEvent(dossierId, "PIPELINE_COMPLETED", "Génération des livrables terminée avec succès");
+
+        } catch (Exception e) {
+            log.error("[Pipeline] Erreur lors de la génération pour dossier {} : {}", dossierId, e.getMessage(), e);
+            sseService.sendEvent(dossierId, "PIPELINE_ERROR", e.getMessage());
+        }
     }
 
     // ── Getters utilisés par les controllers ──────────────────────────────────
@@ -381,6 +404,7 @@ public class AnalyseDeepService {
         existing.setCapaciteDelai(updated.getCapaciteDelai());
         existing.setJustifCapaciteDelai(updated.getJustifCapaciteDelai());
         existing.setTransmission(updated.getTransmission());
+        if (updated.getModeNotation() != null) existing.setModeNotation(updated.getModeNotation());
         // Champs risques corrigés manuellement
         if (updated.getRisquePaysSecurite()        != null) existing.setRisquePaysSecurite(updated.getRisquePaysSecurite());
         if (updated.getRisquesFinanciers()          != null) existing.setRisquesFinanciers(updated.getRisquesFinanciers());

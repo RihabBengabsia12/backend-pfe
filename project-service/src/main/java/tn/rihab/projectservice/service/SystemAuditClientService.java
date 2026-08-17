@@ -11,7 +11,7 @@ import java.util.Map;
 public class SystemAuditClientService {
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String ANALYSTE_SERVICE_URL = "http://localhost:8081/api/system-audit"; // Hardcoded for demo/simplicity
+    private final String ANALYSTE_SERVICE_URL = "http://analyste-service:8080/api/analyst/system-audit"; 
 
     public void logSystemAction(String action, String detail) {
         try {

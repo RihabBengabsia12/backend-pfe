@@ -1,0 +1,30 @@
+<mxGraphModel dx="1373" dy="749" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+    <mxCell id="title" value="Diagramme de sequence - Decision P-Win et matching conditionnel" style="text;html=1;align=center;verticalAlign=middle;fontStyle=1;fontSize=18;" vertex="1" parent="1"><mxGeometry x="210" y="15" width="900" height="30" as="geometry"/></mxCell>
+
+    <mxCell id="deep" value="AnalyseDeepService" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="90" y="75" width="165" height="610" as="geometry"/></mxCell>
+    <mxCell id="score" value="ScoringEngine" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="370" y="75" width="145" height="610" as="geometry"/></mxCell>
+    <mxCell id="nogo" value="NoGoReportService" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="630" y="75" width="155" height="610" as="geometry"/></mxCell>
+    <mxCell id="matching" value="MatchingEngine" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="900" y="75" width="150" height="610" as="geometry"/></mxCell>
+    <mxCell id="front" value="Frontend Angular&#xa;SSE" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="1170" y="75" width="145" height="610" as="geometry"/></mxCell>
+
+    <mxCell id="m1" value="calculate(dossier, analyse, null)" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="172" y="175" as="sourcePoint"/><mxPoint x="442" y="175" as="targetPoint"/></mxGeometry></mxCell>
+    <mxCell id="m2" value="PwinScore(scoreGlobal, decisionAuto)" style="endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="442" y="215" as="sourcePoint"/><mxPoint x="172" y="215" as="targetPoint"/></mxGeometry></mxCell>
+    <mxCell id="m3" value="sendEvent(PWIN_COMPLETED)" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="172" y="255" as="sourcePoint"/><mxPoint x="1242" y="255" as="targetPoint"/></mxGeometry></mxCell>
+
+    <mxCell id="alt" value="alt [decisionAuto = NO_GO ou MANUAL]" style="rounded=0;html=1;align=left;verticalAlign=top;spacingTop=5;spacingLeft=7;dashed=1;fillColor=none;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=10;" vertex="1" parent="1"><mxGeometry x="60" y="290" width="1260" height="300" as="geometry"/></mxCell>
+    <mxCell id="line" value="" style="endArrow=none;startArrow=none;strokeWidth=1;strokeColor=#000000;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="60" y="425" as="sourcePoint"/><mxPoint x="1320" y="425" as="targetPoint"/></mxGeometry></mxCell>
+    <mxCell id="else" value="else [decisionAuto = GO]" style="text;html=1;align=left;verticalAlign=middle;fontStyle=1;fontSize=10;fillColor=#ffffff;strokeColor=none;" vertex="1" parent="1"><mxGeometry x="68" y="429" width="185" height="18" as="geometry"/></mxCell>
+
+    <mxCell id="m4" value="generate(dossierId, dossier, pwin, analyse)" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="172" y="335" as="sourcePoint"/><mxPoint x="707" y="335" as="targetPoint"/></mxGeometry></mxCell>
+    <mxCell id="m5" value="Rapport No-Go genere" style="endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="707" y="370" as="sourcePoint"/><mxPoint x="172" y="370" as="targetPoint"/></mxGeometry></mxCell>
+    <mxCell id="m6" value="sendEvent(PIPELINE_STOPPED_NOGO)" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="172" y="400" as="sourcePoint"/><mxPoint x="1242" y="400" as="targetPoint"/></mxGeometry></mxCell>
+
+    <mxCell id="m7" value="runMatching(dossier, documentText)" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="172" y="470" as="sourcePoint"/><mxPoint x="975" y="470" as="targetPoint"/></mxGeometry></mxCell>
+    <mxCell id="m8" value="MatchingResult(taux de couverture, matrice)" style="endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="975" y="510" as="sourcePoint"/><mxPoint x="172" y="510" as="targetPoint"/></mxGeometry></mxCell>
+    <mxCell id="m9" value="sendEvent(MATCHING_COMPLETED)" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="172" y="550" as="sourcePoint"/><mxPoint x="1242" y="550" as="targetPoint"/></mxGeometry></mxCell>
+    <mxCell id="m10" value="sendEvent(PIPELINE_PAUSED_FOR_VALIDATION)" style="endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1"><mxGeometry relative="1" as="geometry"><mxPoint x="172" y="620" as="sourcePoint"/><mxPoint x="1242" y="620" as="targetPoint"/></mxGeometry></mxCell>
+  </root>
+</mxGraphModel>

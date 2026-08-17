@@ -11,5 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class FeatureFlagDTO {
     private String moduleCode;
+    
+    @com.fasterxml.jackson.annotation.JsonProperty("isEnabled")
     private boolean isEnabled;
 }

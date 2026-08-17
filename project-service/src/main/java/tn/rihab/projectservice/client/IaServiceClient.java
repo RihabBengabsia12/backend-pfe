@@ -42,8 +42,12 @@ public interface IaServiceClient {
     ExtractionResponseDto reextractField(@RequestBody ExtractionRequestDto request);
 
     @GetMapping("/config/prompts")
-    java.util.Map<String, String> getAllPrompts();
+    java.util.Map<String, String> getAllPrompts(
+            @RequestHeader("X-Config-Api-Key") String configApiKey);
 
     @PutMapping("/config/prompts/{filename}")
-    java.util.Map<String, String> updatePrompt(@PathVariable("filename") String filename, @RequestBody tn.rihab.projectservice.dto.PromptUpdateDto request);
+    java.util.Map<String, String> updatePrompt(
+            @PathVariable("filename") String filename,
+            @RequestBody tn.rihab.projectservice.dto.PromptUpdateDto request,
+            @RequestHeader("X-Config-Api-Key") String configApiKey);
 }

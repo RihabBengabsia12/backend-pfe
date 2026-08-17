@@ -1,0 +1,168 @@
+﻿<mxGraphModel dx="1873" dy="1022" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="title" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontStyle=1;fontSize=18;" value="Diagramme de séquence de déclenchement automatique P2 et analyse des risques" vertex="1">
+      <mxGeometry height="30" width="1200" x="260" y="15" as="geometry" />
+    </mxCell>
+    <mxCell id="rabbit" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="RabbitMQ" vertex="1">
+      <mxGeometry height="870" width="125" x="45" y="70" as="geometry" />
+    </mxCell>
+    <mxCell id="consumer" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="analyste-service&#xa;AnalysteEventConsumer" vertex="1">
+      <mxGeometry height="870" width="170" x="265" y="70" as="geometry" />
+    </mxCell>
+    <mxCell id="deep" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="analyste-service&#xa;AnalyseDeepService" vertex="1">
+      <mxGeometry height="870" width="160" x="540" y="70" as="geometry" />
+    </mxCell>
+    <mxCell id="project" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="project-service&#xa;DossierService" vertex="1">
+      <mxGeometry height="870" width="150" x="805" y="70" as="geometry" />
+    </mxCell>
+    <mxCell id="ia" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="ia-service&#xa;ClaudeClient" vertex="1">
+      <mxGeometry height="870" width="145" x="1060" y="70" as="geometry" />
+    </mxCell>
+    <mxCell id="db" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="PostgreSQL&#xa;analyste-service" vertex="1">
+      <mxGeometry height="870" width="160" x="1310" y="70" as="geometry" />
+    </mxCell>
+    <mxCell id="front" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="Frontend Angular&#xa;SSE" vertex="1">
+      <mxGeometry height="870" width="145" x="1570" y="70" as="geometry" />
+    </mxCell>
+    <mxCell id="m1" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="DOSSIER_INDEXED(dossierId, eventType)">
+      <mxGeometry relative="1" x="0.0123" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="107" y="150" as="sourcePoint" />
+        <mxPoint x="350" y="150" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m2" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="onDossierIndexed(event) : runFullPipeline(dossierId) [@Async]">
+      <mxGeometry relative="1" x="0.037" y="15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="353" y="190" as="sourcePoint" />
+        <mxPoint x="623" y="190" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m3" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="sendEvent(PIPELINE_START)">
+      <mxGeometry relative="1" x="-0.0245" y="20" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="621.5" y="220" as="sourcePoint" />
+        <mxPoint x="1643.5" y="220" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m4" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="getDossier(dossierId) + getDocumentText(dossierId)">
+      <mxGeometry relative="1" y="15" as="geometry">
+        <mxPoint x="-1" as="offset" />
+        <mxPoint x="620" y="250" as="sourcePoint" />
+        <mxPoint x="880" y="250" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="opt1" parent="1" style="rounded=0;html=1;align=left;verticalAlign=top;spacingTop=5;spacingLeft=7;dashed=1;fillColor=none;fillOpacity=0;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=10;" value="opt [dossier prive]" vertex="1">
+      <mxGeometry height="62" width="320" x="730" y="270" as="geometry" />
+    </mxCell>
+    <mxCell id="m5" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="retourner la copie de travail anonymisee persistante">
+      <mxGeometry relative="1" x="0.2308" y="-15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="880" y="320" as="sourcePoint" />
+        <mxPoint x="620" y="320" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m6" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="sendEvent(DATA_LOADED)">
+      <mxGeometry relative="1" x="0.0342" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="621.5" y="360" as="sourcePoint" />
+        <mxPoint x="1643.5" y="360" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="alt1" parent="1" style="rounded=0;html=1;align=left;verticalAlign=top;spacingTop=5;spacingLeft=7;dashed=1;fillColor=none;fillOpacity=0;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=10;" value="alt [P2 absente ou noteMinimale absente]" vertex="1">
+      <mxGeometry height="190" width="735" x="500" y="410" as="geometry" />
+    </mxCell>
+    <mxCell id="alt1line" edge="1" parent="1" style="endArrow=none;startArrow=none;strokeWidth=1;strokeColor=#000000;" value="">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="500" y="560" as="sourcePoint" />
+        <mxPoint x="1235" y="560" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="alt1valid" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontStyle=1;fontSize=10;fillColor=#ffffff;strokeColor=none;" value="alt [P2 déjà calculée]" vertex="1">
+      <mxGeometry height="18" width="180" x="508" y="564" as="geometry" />
+    </mxCell>
+    <mxCell id="m7" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="extractPhase2({phase=P2, documentText})">
+      <mxGeometry relative="1" x="-0.0234" y="10" as="geometry">
+        <mxPoint x="-1" as="offset" />
+        <mxPoint x="620" y="450" as="sourcePoint" />
+        <mxPoint x="1132" y="450" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="opt2" parent="1" style="rounded=0;html=1;align=left;verticalAlign=top;spacingTop=5;spacingLeft=7;dashed=1;fillColor=none;fillOpacity=0;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=9;" value="opt [document cacheable] : cache_control ephemeral" vertex="1">
+      <mxGeometry height="35" width="235" x="1040" y="465" as="geometry" />
+    </mxCell>
+    <mxCell id="loop1" parent="1" style="rounded=0;html=1;align=left;verticalAlign=top;spacingTop=5;spacingLeft=7;dashed=1;fillColor=none;fillOpacity=0;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=9;" value="loop [maximum 2 nouvelles tentatives apres echec]" vertex="1">
+      <mxGeometry height="30" width="235" x="1040" y="505" as="geometry" />
+    </mxCell>
+    <mxCell id="m8" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="champs P2, alertes et metriques cache">
+      <mxGeometry relative="1" x="0.0234" y="-20" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="1132" y="540" as="sourcePoint" />
+        <mxPoint x="620" y="540" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m9" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="save(AnalyseDossier, IaAuditLog)">
+      <mxGeometry relative="1" x="-0.026" y="7" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="625" y="587" as="sourcePoint" />
+        <mxPoint x="1395" y="587" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m10" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="sendEvent(PHASE2_COMPLETED)">
+      <mxGeometry relative="1" x="0.0147" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="621.5" y="630" as="sourcePoint" />
+        <mxPoint x="1643.5" y="630" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="alt2" parent="1" style="rounded=0;html=1;align=left;verticalAlign=top;spacingTop=5;spacingLeft=7;dashed=1;fillColor=none;fillOpacity=0;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=10;" value="alt [risques absents ou vides]" vertex="1">
+      <mxGeometry height="220" width="985" x="500" y="640" as="geometry" />
+    </mxCell>
+    <mxCell id="alt2line" edge="1" parent="1" style="endArrow=none;startArrow=none;strokeWidth=1;strokeColor=#000000;" value="">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="500" y="794" as="sourcePoint" />
+        <mxPoint x="1485" y="794" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="alt2valid" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontStyle=1;fontSize=10;fillColor=#ffffff;strokeColor=none;" value="alt [risques déjà calculés]" vertex="1">
+      <mxGeometry height="18" width="200" x="508" y="794" as="geometry" />
+    </mxCell>
+    <mxCell id="m11" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="extractRisks({phase=RISKS, meme documentText})">
+      <mxGeometry relative="1" x="0.0938" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="620" y="680" as="sourcePoint" />
+        <mxPoint x="1132" y="680" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m12" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="10 risques et metriques cache">
+      <mxGeometry relative="1" x="-0.0547" y="-10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="1132" y="720" as="sourcePoint" />
+        <mxPoint x="620" y="720" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="loop2" parent="1" style="rounded=0;html=1;align=left;verticalAlign=top;spacingTop=5;spacingLeft=7;dashed=1;fillColor=none;fillOpacity=0;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=9;" value="loop [pour chaque risque retourne] : conserver niveau et justification" vertex="1">
+      <mxGeometry height="30" width="825" x="580" y="730" as="geometry" />
+    </mxCell>
+    <mxCell id="m13" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="save(AnalyseDossier, IaAuditLog)">
+      <mxGeometry relative="1" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="625" y="780" as="sourcePoint" />
+        <mxPoint x="1395" y="780" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m14" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="sendEvent(RISKS_COMPLETED)">
+      <mxGeometry relative="1" x="-0.044" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="621.5" y="840" as="sourcePoint" />
+        <mxPoint x="1643.5" y="840" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="opt3" parent="1" style="rounded=0;html=1;align=left;verticalAlign=top;spacingTop=5;spacingLeft=7;dashed=1;fillColor=none;fillOpacity=0;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=9;" value="opt [erreur du pipeline] : sendEvent(PIPELINE_ERROR, message)" vertex="1">
+      <mxGeometry height="30" width="1150" x="510" y="885" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>
+

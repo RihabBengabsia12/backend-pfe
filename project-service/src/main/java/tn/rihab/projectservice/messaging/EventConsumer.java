@@ -49,8 +49,18 @@ public class EventConsumer {
                 case "GO_CONDITIONNEL"-> DossierStatus.SCORING;
                 case "NO_GO"          -> DossierStatus.MANUAL_INTERVENTION;
                 case "MANUAL"         -> DossierStatus.MANUAL_INTERVENTION;
+                case "NO-GO"          -> DossierStatus.NO_GO_CONFIRMED;
                 default               -> DossierStatus.MANUAL_INTERVENTION;
             };
+
+            // Anti-race condition RabbitMQ : si le dossier est déjà avancé (Matching, Pack, etc.), on ne le rétrograde pas en SCORING.
+            if (nouveauStatut == DossierStatus.SCORING && dossier.getStatus() != null) {
+                int currentOrdinal = dossier.getStatus().ordinal();
+                int scoringOrdinal = DossierStatus.SCORING.ordinal();
+                if (currentOrdinal > scoringOrdinal) {
+                    nouveauStatut = dossier.getStatus();
+                }
+            }
 
             // ── AJOUT : stocker le chemin du rapport No-Go si présent ──────────
             if (payload.has("nogoReportPath") && !payload.path("nogoReportPath").asText().isBlank()) {
@@ -164,8 +174,12 @@ public class EventConsumer {
             Dossier dossier = findDossier(event);
             JsonNode payload = objectMapper.readTree(event.getPayload());
 
-            if (payload.has("auditReportPath"))
-                dossier.setAuditReportPath(payload.path("auditReportPath").asText());
+            String auditReportPath = payload.path("auditReportPath").asText("");
+            if (auditReportPath.isBlank()) {
+                log.error("[RabbitMQ] AUDIT_GENERATED ignoré pour {} : chemin du rapport absent", event.getDossierId());
+                return;
+            }
+            dossier.setAuditReportPath(auditReportPath);
 
             dossier.setStatus(DossierStatus.ARCHIVED);
             dossierRepository.save(dossier);

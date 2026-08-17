@@ -37,6 +37,7 @@ import java.util.UUID;
 public class DossierController {
 
     private final DossierService dossierService;
+    private final tn.rihab.projectservice.service.ValidationService validationService;
 
     // ── POST /api/dossiers/upload ─────────────────────────────────────────────
 
@@ -86,6 +87,25 @@ public class DossierController {
         return ResponseEntity.ok(java.util.Map.of("message", "Analyse lancée avec succès"));
     }
 
+    @PostMapping("/batch-analyze")
+    public ResponseEntity<java.util.Map<String, String>> launchBatchAnalysis(@RequestBody List<UUID> ids) {
+        log.info("[Analyse] Lancement par lot pour {} dossiers", ids.size());
+        
+        for(UUID id : ids) {
+            dossierService.updateStatus(id, tn.rihab.projectservice.model.DossierStatus.PARSING_INITIAL);
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    dossierService.launchAnalysis(id);
+                } catch (Exception e) {
+                    log.error("[Analyse] Erreur pendant l'analyse asynchrone (lot) pour {}: {}", id, e.getMessage(), e);
+                    dossierService.updateStatus(id, tn.rihab.projectservice.model.DossierStatus.ERROR);
+                }
+            });
+        }
+
+        return ResponseEntity.ok(java.util.Map.of("message", "Analyse par lot lancée avec succès pour " + ids.size() + " dossiers"));
+    }
+
     @GetMapping
     public ResponseEntity<List<Dossier>> getAll() {
         return ResponseEntity.ok(dossierService.getAll());
@@ -132,7 +152,27 @@ public class DossierController {
         ));
     }
 
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Void> updateStatus(@PathVariable UUID id, @RequestParam tn.rihab.projectservice.model.DossierStatus status) {
+        log.info("[DossierController] Mise à jour du statut pour le dossier {} : {}", id, status);
+        dossierService.updateStatus(id, status);
+        return ResponseEntity.ok().build();
+    }
+
     // ── PUT /api/dossiers/{id}/priority ────────────────────────────────────────
+
+    @PostMapping("/{id}/notify-analyst")
+    public ResponseEntity<Void> notifyAnalyst(@PathVariable UUID id) {
+        log.info("[DossierController] notifyAnalyst appele pour dossier {}", id);
+        dossierService.updateStatus(id, tn.rihab.projectservice.model.DossierStatus.MATCHING);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/notify-manager-nogo")
+    public ResponseEntity<Void> notifyManagerNoGo(@PathVariable UUID id) {
+        validationService.sendNoGoTargeted(id);
+        return ResponseEntity.ok().build();
+    }
 
     @PutMapping("/{id}/priority")
     public ResponseEntity<Dossier> updatePriority(
@@ -150,6 +190,34 @@ public class DossierController {
     @GetMapping("/{id}/document-text")
     public ResponseEntity<String> getDocumentText(@PathVariable UUID id) {
         return ResponseEntity.ok(dossierService.getDocumentText(id));
+    }
+
+    // ── GET /api/dossiers/manager/pending-nogo ───────────────────────────────
+    
+    @GetMapping("/manager/pending-nogo")
+    public ResponseEntity<List<Dossier>> getPendingNoGo() {
+        return ResponseEntity.ok(dossierService.getPendingNoGo());
+    }
+
+    // ── POST /api/dossiers/{id}/decision-nogo ────────────────────────────────
+    
+    @PostMapping("/{id}/decision-nogo")
+    public ResponseEntity<Map<String, String>> processNoGoDecision(
+            @PathVariable UUID id,
+            @RequestBody tn.rihab.projectservice.dto.NoGoDecisionRequestDto request) {
+        
+        log.info("[Manager] Décision No-Go pour dossier {} : {}", id, request.getDecision());
+        dossierService.processNoGoDecision(id, request);
+        return ResponseEntity.ok(Map.of("message", "Décision enregistrée avec succès"));
+    }
+
+    // ── POST /api/dossiers/{id}/archive-and-audit ────────────────────────────
+    
+    @PostMapping("/{id}/archive-and-audit")
+    public ResponseEntity<Map<String, String>> archiveAndAudit(@PathVariable UUID id) {
+        log.info("[Manager] Action finale: Classer No-Go et Générer Audit pour dossier {}", id);
+        dossierService.archiveAndAudit(id);
+        return ResponseEntity.ok(Map.of("message", "Dossier archivé et audit généré"));
     }
 
     // ── Validation de fichier ──────────────────────────────────────────────────

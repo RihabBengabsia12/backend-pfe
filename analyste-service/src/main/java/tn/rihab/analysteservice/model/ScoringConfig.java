@@ -64,4 +64,12 @@ public class ScoringConfig {
 
     @Column(name = "seuil_compat_experts") @Builder.Default
     private Double seuilCompatExperts = 0.40;
+
+    /** Seuil de couverture à partir duquel l'alignement stratégique est "Oui". */
+    @Column(name = "seuil_alignement_oui") @Builder.Default
+    private Double seuilAlignementOui = 0.80;
+
+    /** Seuil minimal de couverture pour un alignement stratégique "Partiel". */
+    @Column(name = "seuil_alignement_partiel") @Builder.Default
+    private Double seuilAlignementPartiel = 0.50;
 }

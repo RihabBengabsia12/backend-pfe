@@ -1,0 +1,107 @@
+﻿<mxGraphModel dx="1212" dy="661" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="title" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontStyle=1;fontSize=18;" value="Diagramme de séquence de décision P-Win et matching conditionnel" vertex="1">
+      <mxGeometry height="30" width="900" x="210" y="15" as="geometry" />
+    </mxCell>
+    <mxCell id="deep" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="AnalyseDeepService" vertex="1">
+      <mxGeometry height="610" width="165" x="90" y="75" as="geometry" />
+    </mxCell>
+    <mxCell id="score" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="ScoringEngine" vertex="1">
+      <mxGeometry height="610" width="145" x="370" y="75" as="geometry" />
+    </mxCell>
+    <mxCell id="nogo" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="NoGoReportService" vertex="1">
+      <mxGeometry height="610" width="155" x="630" y="75" as="geometry" />
+    </mxCell>
+    <mxCell id="matching" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="MatchingEngine" vertex="1">
+      <mxGeometry height="610" width="150" x="900" y="75" as="geometry" />
+    </mxCell>
+    <mxCell id="front" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;html=1;strokeWidth=2;" value="Frontend Angular&#xa;SSE" vertex="1">
+      <mxGeometry height="610" width="145" x="1170" y="75" as="geometry" />
+    </mxCell>
+    <mxCell id="m1" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="calculate(dossier, analyse, null)">
+      <mxGeometry relative="1" x="0.0222" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="172" y="160" as="sourcePoint" />
+        <mxPoint x="442" y="160" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m2" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="PwinScore(scoreGlobal, decisionAuto)">
+      <mxGeometry relative="1" x="-0.0963" y="-10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="442" y="200" as="sourcePoint" />
+        <mxPoint x="172" y="200" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m3" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="sendEvent(PWIN_COMPLETED)">
+      <mxGeometry relative="1" x="0.0449" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="171" y="230" as="sourcePoint" />
+        <mxPoint x="1241" y="230" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="alt" parent="1" style="rounded=0;html=1;align=left;verticalAlign=top;spacingTop=5;spacingLeft=7;dashed=1;fillColor=none;fillOpacity=0;strokeColor=#000000;strokeWidth=2;fontStyle=1;fontSize=10;" value="alt [decisionAuto = NO_GO ou MANUAL]" vertex="1">
+      <mxGeometry height="300" width="1260" x="60" y="290" as="geometry" />
+    </mxCell>
+    <mxCell id="line" edge="1" parent="1" style="endArrow=none;startArrow=none;strokeWidth=1;strokeColor=#000000;" value="">
+      <mxGeometry relative="1" as="geometry">
+        <mxPoint x="60" y="425" as="sourcePoint" />
+        <mxPoint x="1320" y="425" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="altGo" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontStyle=1;fontSize=10;fillColor=#ffffff;strokeColor=none;" value="alt [decisionAuto = GO]" vertex="1">
+      <mxGeometry height="18" width="185" x="68" y="429" as="geometry" />
+    </mxCell>
+    <mxCell id="m4" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="generate(dossierId, dossier, pwin, analyse)">
+      <mxGeometry relative="1" x="0.0019" y="15" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="172" y="335" as="sourcePoint" />
+        <mxPoint x="707" y="335" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m5" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="Rapport No-Go genere">
+      <mxGeometry relative="1" x="-0.0393" y="-10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="707" y="370" as="sourcePoint" />
+        <mxPoint x="172" y="370" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m6" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="sendEvent(PIPELINE_STOPPED_NOGO)">
+      <mxGeometry relative="1" x="0.043" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="172" y="400" as="sourcePoint" />
+        <mxPoint x="1242" y="400" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m7" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="runMatching(dossier, documentText)">
+      <mxGeometry relative="1" x="0.0411" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="172" y="470" as="sourcePoint" />
+        <mxPoint x="975" y="470" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m8" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=open;dashed=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="MatchingResult(taux de couverture, matrice)">
+      <mxGeometry relative="1" x="-0.0162" y="-10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="975" y="510" as="sourcePoint" />
+        <mxPoint x="172" y="510" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m9" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="sendEvent(MATCHING_COMPLETED)">
+      <mxGeometry relative="1" x="0.0056" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="172" y="550" as="sourcePoint" />
+        <mxPoint x="1242" y="550" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="m10" edge="1" parent="1" style="edgeStyle=none;orthogonalLoop=0;rounded=0;endArrow=block;endFill=1;strokeWidth=2;html=1;fontSize=10;labelBackgroundColor=#ffffff;" value="sendEvent(PIPELINE_PAUSED_FOR_VALIDATION)">
+      <mxGeometry relative="1" x="0.043" y="10" as="geometry">
+        <mxPoint as="offset" />
+        <mxPoint x="172" y="620" as="sourcePoint" />
+        <mxPoint x="1242" y="620" as="targetPoint" />
+      </mxGeometry>
+    </mxCell>
+  </root>
+</mxGraphModel>
+

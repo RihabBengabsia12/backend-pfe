@@ -4,16 +4,40 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
 public class SseService {
 
     private final Map<UUID, SseEmitter> emitters = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    @PostConstruct
+    public void init() {
+        scheduler.scheduleAtFixedRate(() -> {
+            emitters.forEach((id, emitter) -> {
+                try {
+                    emitter.send(SseEmitter.event().name("PING").data("keep-alive"));
+                } catch (Exception e) {
+                    emitters.remove(id);
+                }
+            });
+        }, 15, 15, TimeUnit.SECONDS);
+    }
+
+    @PreDestroy
+    public void destroy() {
+        scheduler.shutdown();
+    }
 
     public SseEmitter subscribe(UUID dossierId) {
         // Keep connection open for 30 minutes

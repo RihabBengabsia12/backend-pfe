@@ -3,6 +3,9 @@ package tn.rihab.analysteservice.matching.matchers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tn.rihab.analysteservice.dto.DossierDto;
 import tn.rihab.analysteservice.dto.ia.RequirementsResponseDto;
+import tn.rihab.analysteservice.client.IaServiceClient;
+import tn.rihab.analysteservice.dto.ia.ExpertMatchRequestDto;
+import tn.rihab.analysteservice.dto.ia.ExpertMatchResponseDto;
 import tn.rihab.analysteservice.model.ExpertProfil;
 import tn.rihab.analysteservice.repository.ExpertProfilRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +27,7 @@ import java.util.List;
 public class ExpertsMatcher {
 
     private final ExpertProfilRepository expertRepo;
+    private final IaServiceClient iaServiceClient;
     private final ObjectMapper objectMapper; // 🚀 Injecté par Spring pour une sérialisation robuste
 
     // 🚀 Structure pour représenter proprement chaque ligne du détail JSON
@@ -54,33 +58,53 @@ public class ExpertsMatcher {
         int dureeMois = dossier.getHommesMois() != null
                 ? (int) Math.ceil(dossier.getHommesMois() / 2.0) // estimation grossière
                 : 12;
+                
+        // Cap duration to 10 years (120 months) to prevent SQL date out of range errors
+        if (dureeMois > 120) {
+            dureeMois = 120;
+        }
 
         LocalDate finEstimee = debutEstime.plusMonths(dureeMois);
 
         List<ExpertProfil> disponibles = expertRepo.findDisponibles(debutEstime, finEstimee);
 
+        // Convert available experts to DTOs for the AI service
+        List<ExpertMatchRequestDto.ExpertInfo> expertsInfo = disponibles.stream()
+                .map(e -> new ExpertMatchRequestDto.ExpertInfo(
+                        e.getId().toString(),
+                        e.getNom(),
+                        e.getSpecialites()
+                )).toList();
+
         int couverts = 0;
-        // 🚀 On remplace le StringBuilder par une liste d'objets Java typés
         List<ExpertMatchDetail> detailsList = new ArrayList<>();
 
         for (RequirementsResponseDto.ExpertRequisDto requis : expertsRequis) {
-            String roleRecherche = requis.getRole() != null
-                    ? requis.getRole().toLowerCase() : "";
-
-            // Chercher un expert disponible dont les spécialités matchent le rôle requis
-            ExpertProfil matched = disponibles.stream()
-                    .filter(e -> e.getSpecialites() != null && e.getSpecialites().stream()
-                            .anyMatch(s -> s.toLowerCase().contains(roleRecherche)
-                                    || roleRecherche.contains(s.toLowerCase())))
-                    .findFirst()
-                    .orElse(null);
+            ExpertProfil matched = null;
+            if (requis.getRole() != null && !expertsInfo.isEmpty()) {
+                try {
+                    ExpertMatchRequestDto req = new ExpertMatchRequestDto(requis.getRole(), expertsInfo);
+                    List<ExpertMatchResponseDto> bestMatches = iaServiceClient.matchExperts(req);
+                    
+                    if (bestMatches != null && !bestMatches.isEmpty()) {
+                        ExpertMatchResponseDto bestMatch = bestMatches.get(0);
+                        if (bestMatch.getScore() >= 50.0) {
+                            matched = disponibles.stream()
+                                    .filter(e -> e.getId().toString().equals(bestMatch.getExpertId()))
+                                    .findFirst()
+                                    .orElse(null);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("[ExpertsMatcher] Erreur appel ia-service pour {}", requis.getRole(), e);
+                }
+            }
 
             boolean couvert = matched != null;
             if (couvert) {
                 couverts++;
             }
 
-            // 🚀 Ajout propre dans la liste d'objets
             detailsList.add(new ExpertMatchDetail(
                     requis.getRole(),
                     matched != null ? matched.getNom() : "Non identifié",

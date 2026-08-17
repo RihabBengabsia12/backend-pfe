@@ -123,6 +123,15 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Mot de passe modifié avec succès."));
     }
 
+    @PostMapping("/change-password")
+    public ResponseEntity<Map<String, String>> changePassword(
+            @RequestBody ChangePasswordRequest request,
+            HttpServletRequest http) {
+        String email = (String) http.getAttribute("email");
+        authService.changePassword(email, request.getOldPassword(), request.getNewPassword(), http);
+        return ResponseEntity.ok(Map.of("message", "Mot de passe modifié avec succès."));
+    }
+
     // --- MONITORING & LOGS ---
 
     @GetMapping("/events")

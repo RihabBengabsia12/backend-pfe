@@ -59,6 +59,45 @@ public class DocumentController {
         ));
     }
 
+    @GetMapping("/{id}/download/{type}/blob")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadBlob(
+            @PathVariable UUID id,
+            @PathVariable String type) {
+
+        Dossier dossier = dossierService.findById(id);
+
+        String path = switch (type.toLowerCase()) {
+            case "apo"     -> dossier.getApoDocxPath();
+            case "methodo" -> dossier.getMethodoDocxPath();
+            case "rapport" -> dossier.getRapportPath();
+            case "pack"    -> dossier.getPackZipPath();
+            case "audit"   -> dossier.getAuditReportPath();
+            case "nogo"    -> dossier.getNogoReportPath();
+            default        -> throw new IllegalArgumentException("Type de document inconnu : " + type);
+        };
+
+        if (path == null || path.isBlank()) {
+            throw new IllegalStateException("Document '" + type + "' introuvable.");
+        }
+
+        try {
+            java.io.InputStream is = storageService.getStream(path);
+            byte[] data = is.readAllBytes();
+            org.springframework.core.io.ByteArrayResource resource = new org.springframework.core.io.ByteArrayResource(data);
+            String filename = extractFilename(path, type, id);
+
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                    .contentType(org.springframework.http.MediaType.parseMediaType(
+                            filename.endsWith(".zip") ? "application/zip" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    ))
+                    .body(resource);
+        } catch (Exception e) {
+            log.error("[Document] Erreur lors du téléchargement direct : {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     // ── Utilitaire ─────────────────────────────────────────────────────────────
 
     private String extractFilename(String path, String type, UUID id) {

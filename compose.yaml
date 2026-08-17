@@ -5,7 +5,7 @@ services:
 
   discovery-server:
     build:
-      context: ../discovery-server
+      context: ./discovery-server
       dockerfile: Dockerfile
     container_name: projectiq-discovery-server
     restart: always
@@ -30,6 +30,7 @@ services:
     restart: always
     env_file: [.env]
     environment:
+      TZ: Africa/Tunis
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: postgres
@@ -105,8 +106,9 @@ services:
     restart: on-failure
     env_file: [.env]
     environment:
+      - TZ=Africa/Tunis
       - JAVA_OPTS=-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx384m -noverify -Djava.security.egd=file:/dev/./urandom
-      - SPRING_MAIN_LAZY_INITIALIZATION=true
+      - SPRING_MAIN_LAZY_INITIALIZATION=false
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://projectiq-postgres:5432/${AUTH_DB_NAME}
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
@@ -132,8 +134,9 @@ services:
     restart: on-failure
     env_file: [.env]
     environment:
+      - TZ=Africa/Tunis
       - JAVA_OPTS=-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx384m -noverify -Djava.security.egd=file:/dev/./urandom
-      - SPRING_MAIN_LAZY_INITIALIZATION=true
+      - SPRING_MAIN_LAZY_INITIALIZATION=false
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://projectiq-postgres:5432/${ADMIN_DB_NAME}
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
@@ -159,8 +162,9 @@ services:
     restart: on-failure
     env_file: [.env]
     environment:
+      - TZ=Africa/Tunis
       - JAVA_OPTS=-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx512m -noverify -Djava.security.egd=file:/dev/./urandom
-      - SPRING_MAIN_LAZY_INITIALIZATION=true
+      - SPRING_MAIN_LAZY_INITIALIZATION=false
       - SPRING_APPLICATION_NAME=PROJECT-SERVICE
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:postgresql://projectiq-postgres:5432/projectiq_db
@@ -171,7 +175,9 @@ services:
       - SPRING_MAIL_PORT=1025
       - SERVER_PORT=8083
       - IA_SERVICE_URL=http://ia-service:8000
+      - PROJECTIQ_CONFIG_API_KEY=${PROJECTIQ_CONFIG_API_KEY}
       - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_PUBLIC_ENDPOINT=http://localhost:9000
       - FEIGN_CLIENT_CONFIG_DEFAULT_CONNECTTIMEOUT=60000
       - FEIGN_CLIENT_CONFIG_DEFAULT_READTIMEOUT=3600000
     ports:
@@ -197,8 +203,9 @@ services:
     restart: on-failure
     env_file: [ .env ]
     environment:
+      - TZ=Africa/Tunis
       - JAVA_OPTS=-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx512m -noverify -Djava.security.egd=file:/dev/./urandom
-      - SPRING_MAIN_LAZY_INITIALIZATION=true
+      - SPRING_MAIN_LAZY_INITIALIZATION=false
       - SPRING_APPLICATION_NAME=ANALYSTE-SERVICE
       - SERVER_PORT=8080
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
@@ -235,8 +242,9 @@ services:
     container_name: projectiq-api-gateway
     restart: on-failure
     environment:
+      - TZ=Africa/Tunis
       - JAVA_OPTS=-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Xmx384m -noverify -Djava.security.egd=file:/dev/./urandom
-      - SPRING_MAIN_LAZY_INITIALIZATION=true
+      - SPRING_MAIN_LAZY_INITIALIZATION=false
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
       - SPRING_CLOUD_GATEWAY_HTTPCLIENT_RESPONSE_TIMEOUT=60s
       - SPRING_CLOUD_GATEWAY_HTTPCLIENT_CONNECT_TIMEOUT=10000
@@ -246,13 +254,12 @@ services:
       - SPRING_CLOUD_GATEWAY_ROUTES[1]_ID=admin-service-route
       - SPRING_CLOUD_GATEWAY_ROUTES[1]_URI=lb://ADMIN-SERVICE
       - SPRING_CLOUD_GATEWAY_ROUTES[1]_PREDICATES[0]=Path=/api/admin/**
-      - SPRING_CLOUD_GATEWAY_ROUTES[1]_FILTERS[0]=StripPrefix=1
       - SPRING_CLOUD_GATEWAY_ROUTES[2]_ID=project-service-route
       - SPRING_CLOUD_GATEWAY_ROUTES[2]_URI=lb://PROJECT-SERVICE
-      - SPRING_CLOUD_GATEWAY_ROUTES[2]_PREDICATES[0]=Path=/api/projects/**,/api/dossiers/**,/api/documents/**,/api/validation/**
+      - SPRING_CLOUD_GATEWAY_ROUTES[2]_PREDICATES[0]=Path=/api/projects/**,/api/dossiers/**,/api/documents/**,/api/validation/**,/api/delegations/**
       - SPRING_CLOUD_GATEWAY_ROUTES[3]_ID=analyste-service-route
       - SPRING_CLOUD_GATEWAY_ROUTES[3]_URI=lb://ANALYSTE-SERVICE
-      - SPRING_CLOUD_GATEWAY_ROUTES[3]_PREDICATES[0]=Path=/api/analyst/**
+      - SPRING_CLOUD_GATEWAY_ROUTES[3]_PREDICATES[0]=Path=/api/analyst/**,/api/analyses/**,/api/scoring/**,/api/config/scoring/**,/api/matching/**,/api/export/**,/api/apo/**,/api/referentiel/**
       - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORSCONFIGURATIONS_[/**]_ALLOWEDMETHODS[0]=GET
       - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORSCONFIGURATIONS_[/**]_ALLOWEDMETHODS[1]=POST
       - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORSCONFIGURATIONS_[/**]_ALLOWEDMETHODS[2]=PUT
@@ -273,18 +280,19 @@ services:
 
   ia-service:
     build:
-      context: ../../Desktop/frontend-PFE/ia-service
+      context: ../../frontend-pfe/ia-service
       dockerfile: Dockerfile
     container_name: projectiq-ia-service
     restart: always
-    env_file: [../../Desktop/frontend-PFE/ia-service/.env]
+    env_file: ../../frontend-pfe/ia-service/.env
+    environment:
+      - PROJECTIQ_CONFIG_API_KEY=${PROJECTIQ_CONFIG_API_KEY}
     ports:
       - "8000:8000"
     volumes:
-      - ../../Desktop/frontend-PFE/ia-service:/app
+      - ../../frontend-pfe/ia-service:/app
     networks:
       - projectiq-network
-
 volumes:
   projectiq_postgres_data:
   projectiq_rabbitmq_data:

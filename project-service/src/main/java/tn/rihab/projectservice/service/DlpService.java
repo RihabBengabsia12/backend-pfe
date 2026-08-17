@@ -67,7 +67,7 @@ public class DlpService {
     }
 
     @Transactional
-    public AnonymizationDict toggleActive(Long id, boolean isActive) {
+    public AnonymizationDict toggleActive(java.util.UUID id, boolean isActive) {
         AnonymizationDict dict = dictRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Mot introuvable avec l'ID: " + id));
         dict.setIsActive(isActive);
@@ -75,7 +75,7 @@ public class DlpService {
     }
 
     @Transactional
-    public void deleteWord(Long id) {
+    public void deleteWord(java.util.UUID id) {
         dictRepository.deleteById(id);
     }
 
